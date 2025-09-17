@@ -1,0 +1,13 @@
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<script type="text/javascript">
+    alert("{{ messages[0] }}");  // Exibe a mensagem flash em um alert
+    window.location.href = "{{ url }}";  // Redireciona após o alerta
+</script>
+
+{% else %}
+<script type="text/javascript">
+    window.location.href = "/home";  // Redireciona após o alerta
+</script>
+{% endif %}
+{% endwith %}

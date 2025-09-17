@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPZ</title>
+
+  <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- CSS e JS para conflitos -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/conflict_modal.css') }}" />
+  <script src="{{ url_for('static', filename='js/conflict-utils.js') }}"></script>
+
+  <!-- Inclui o componente de autocomplete -->
+  {% include 'partials/autocomplete.html' %}
+  {% include 'partials/progress_bar.html' %}
+
+  <style>
+    .form-container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .form-grupo {
+      margin-bottom: 15px;
+    }
+    .form-grupo label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .form-control {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+    .btn-primary:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <h1>Inserir dados do Ponto</h1>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="flash-message" style="padding: 10px; margin: 10px 0; border-radius: 5px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="form-container">
+      <form id="form-dayoff" action="{{ url_for('fechamento.save_dayoff') }}" method="POST" autocomplete="off">
+        <div class="form-grupo">
+          <label for="motorist_search">MOTORISTA</label>
+          <input type="hidden" name="motorist_id" id="motorist_id">
+          <input type="text" id="motorist_search" class="form-control" required>
+        </div>
+
+        <div class="form-grupo">
+          <label for="start_date">PERÍODO (Data de Início)</label>
+          <input type="date" name="start_date" id="start_date" class="form-control" required />
+        </div>
+
+        <div class="form-grupo">
+          <label for="end_date">ATÉ (Data de Fim)</label>
+          <input type="date" name="end_date" id="end_date" class="form-control" required />
+        </div>
+
+        <div class="form-grupo">
+          <label for="motivo">MOTIVO</label>
+          <select name="motivo" id="motivo" class="form-control" required>
+            <option value="">Selecione o motivo</option>
+            {% for criterio in criterias %}
+                <option value="{{ criterio.valor_filtro }}">{{ criterio.valor_filtro }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Campos específicos para GARAGEM e CARGA/DESCARGA -->
+        <div id="garagem-fields" style="display: none;">
+          <div class="form-grupo">
+            <label for="placa_veiculo">PLACA DO VEÍCULO (Opcional)</label>
+            <input type="hidden" name="truck_id" id="truck_id">
+            <input type="text" id="placa_veiculo" class="form-control" placeholder="Digite a placa do veículo..." />
+          </div>
+          
+          <div class="form-grupo">
+            <label for="inicio_jornada">INÍCIO DE JORNADA</label>
+            <input type="time" name="inicio_jornada" id="inicio_jornada" class="form-control" />
+          </div>
+          
+          <div class="form-grupo">
+            <label for="fim_jornada">FIM DE JORNADA</label>
+            <input type="time" name="fim_jornada" id="fim_jornada" class="form-control" />
+          </div>
+          
+          <div class="form-grupo">
+            <label for="inicio_refeicao">INÍCIO DE REFEIÇÃO (Opcional)</label>
+            <input type="time" name="inicio_refeicao" id="inicio_refeicao" class="form-control" />
+          </div>
+          
+          <div class="form-grupo">
+            <label for="fim_refeicao">FIM DE REFEIÇÃO (Opcional)</label>
+            <input type="time" name="fim_refeicao" id="fim_refeicao" class="form-control" />
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btn-save">
+          <span class="spinner" style="display:none; margin-right: 6px;"></span>
+          <span class="btn-text">Salvar</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Função para converter tempo HH:MM para minutos
+    function tempoParaMinutos(tempo) {
+      if (!tempo) return 0;
+      const [horas, minutos] = tempo.split(':').map(Number);
+      return horas * 60 + minutos;
+    }
+    
+    // Função para converter minutos para tempo HH:MM
+    function minutosParaTempo(minutos) {
+      if (!minutos || minutos < 0) return '00:00';
+      const horas = Math.floor(minutos / 60);
+      const mins = minutos % 60;
+      return `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    }
+    
+    // Função para calcular tempo entre dois horários
+    function calcularTempo(inicio, fim) {
+      if (!inicio || !fim) return 0;
+      const inicioMin = tempoParaMinutos(inicio);
+      const fimMin = tempoParaMinutos(fim);
+      let diff = fimMin - inicioMin;
+      if (diff < 0) diff += 24 * 60; // Ajuste para virada de dia
+      return Math.max(0, diff);
+    }
+    
+    // Função para calcular jornada total (descontando refeição)
+    function calcularJornadaTotal(inicioJornada, fimJornada, inicioRefeicao, fimRefeicao) {
+      const jornadaBruta = calcularTempo(inicioJornada, fimJornada);
+      const tempoRefeicao = calcularTempo(inicioRefeicao, fimRefeicao);
+      return Math.max(0, jornadaBruta - tempoRefeicao);
+    }
+    
+    // Função para calcular carga horária (padrão ou especial)
+    function calcularCargaHoraria(motivo) {
+      // Verificar se existe carga horária especial configurada
+      if (window.criterios && Array.isArray(window.criterios)) {
+        const criterio = window.criterios.find(c => c.valor_filtro === motivo);
+        if (criterio && criterio.carga_horaria_especial && criterio.carga_horaria_especial !== 'Padrão') {
+          // Usar carga horária especial configurada
+          const [horas] = criterio.carga_horaria_especial.split(':').map(Number);
+          return horas * 60; // Converter para minutos
+        }
+      }
+      
+      // Valor padrão: 8 horas (480 minutos)
+      return 480;
+    }
+    
+    // Função para calcular hora extra 50%
+    function calcularHoraExtra50(jornadaTotal, cargaHoraria) {
+      return Math.max(0, jornadaTotal - cargaHoraria);
+    }
+    
+    // Função para calcular hora extra noturna (simplificado)
+    function calcularHENoturno(inicioJornada, fimJornada) {
+      // Período noturno: 22:00 às 05:00 (7 horas = 420 minutos)
+      const inicioNoturno = 22 * 60; // 22:00 em minutos
+      const fimNoturno = 5 * 60;     // 05:00 em minutos
+      
+      const inicioMin = tempoParaMinutos(inicioJornada);
+      const fimMin = tempoParaMinutos(fimJornada);
+      
+      let tempoNoturno = 0;
+      
+      // Se a jornada cruza a meia-noite
+      if (fimMin < inicioMin) {
+        // Antes da meia-noite (22:00 - 23:59)
+        if (inicioMin <= 23 * 60 + 59) {
+          tempoNoturno += Math.min(23 * 60 + 59 - inicioMin, 120);
+        }
+        // Depois da meia-noite (00:00 - 05:00)
+        if (fimMin >= 0) {
+          tempoNoturno += Math.min(fimMin, 300);
+        }
+      } else {
+        // Jornada normal no mesmo dia
+        if (inicioMin <= fimNoturno) {
+          // Começa antes das 05:00
+          tempoNoturno += Math.min(fimMin, fimNoturno) - inicioMin;
+        } else if (inicioMin <= 23 * 60 + 59 && fimMin >= inicioNoturno) {
+          // Termina depois das 22:00
+          tempoNoturno += Math.min(fimMin, 23 * 60 + 59) - Math.max(inicioMin, inicioNoturno);
+        }
+      }
+      
+      return Math.max(0, tempoNoturno);
+    }
+    
+    // Preparar dados para o autocomplete
+    const motoristas = [
+      {% for motorist in motorists %}
+      {
+        value: "{{ motorist[0] }}",
+        label: "{{ motorist[1] }}"
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    const veiculos = [
+      {% for truck in trucks %}
+      {
+        value: "{{ truck[0] }}",
+        label: "{{ truck[1] }}"
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    // Inicializar o componente de autocomplete
+    document.addEventListener('DOMContentLoaded', function() {
+      const autocompleteMotorista = initAutocomplete('motorist_search', {
+        data: motoristas,
+        placeholder: 'Digite o nome do motorista...',
+        onSelect: function(item) {
+          document.getElementById('motorist_id').value = item.value;
+        }
+      });
+
+      const autocompleteVeiculo = initAutocomplete('placa_veiculo', {
+        data: veiculos,
+        placeholder: 'Digite a placa do veículo...',
+        onSelect: function(item) {
+          // 🆕 CORREÇÃO: Salvar a PLACA (label) em vez do ID (value)
+          document.getElementById('truck_id').value = item.label;
+        }
+      });
+    });
+
+    $(document).ready(function () {
+              // Controle de exibição dos campos de horários para GARAGEM e CARGA/DESCARGA
+        $("#motivo").on("change", function() {
+          const motivo = $(this).val().toUpperCase();
+          if (motivo && (motivo.includes("GARAGEM") || motivo.includes("CARGA/DESCARGA"))) {
+            $("#garagem-fields").show();
+            // PLACA DO VEÍCULO é opcional agora
+            $("#inicio_jornada, #fim_jornada").prop("required", true);
+            $("#inicio_refeicao, #fim_refeicao").prop("required", false); // Refeição opcional
+          } else {
+            $("#garagem-fields").hide();
+            $("#placa_veiculo, #inicio_jornada, #fim_jornada, #inicio_refeicao, #fim_refeicao").prop("required", false);
+          }
+        });
+
+      // Validação das datas
+      $("#start_date, #end_date").on("change", function () {
+        const startDate = new Date($("#start_date").val());
+        const endDate = new Date($("#end_date").val());
+
+        if (endDate < startDate) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Data inválida',
+            text: 'A Data de Fim deve ser igual ou posterior à Data de Início.'
+          });
+          $("#end_date").val("");
+        }
+      });
+
+      // Manipulação do formulário
+      $("#form-dayoff").on("submit", function (e) {
+        e.preventDefault();
+        
+        const formData = {
+          motorist_id: $("#motorist_id").val(),
+          start_date: $("#start_date").val(),
+          end_date: $("#end_date").val(),
+          motivo: $("#motivo").val(),
+          truck_id: $("#truck_id").val(),
+          inicio_jornada: $("#inicio_jornada").val(),
+          fim_jornada: $("#fim_jornada").val(),
+          inicio_refeicao: $("#inicio_refeicao").val(),
+          fim_refeicao: $("#fim_refeicao").val()
+        };
+
+        // Validações específicas para GARAGEM e CARGA/DESCARGA
+        const motivo = $("#motivo").val().toUpperCase();
+        if (motivo && (motivo.includes("GARAGEM") || motivo.includes("CARGA/DESCARGA"))) {
+          // PLACA DO VEÍCULO é opcional agora
+          if (!formData.inicio_jornada || !formData.fim_jornada) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Campos obrigatórios',
+              text: 'Para ' + motivo + ', os horários de início e fim de jornada são obrigatórios.'
+            });
+            return;
+          }
+          // Horários de refeição são opcionais agora
+          
+          // Validação: verificar se o tempo de refeição está dentro do tempo de jornada
+          if (formData.inicio_jornada && formData.fim_jornada && formData.inicio_refeicao && formData.fim_refeicao) {
+            const inicioJornadaMin = tempoParaMinutos(formData.inicio_jornada);
+            const fimJornadaMin = tempoParaMinutos(formData.fim_jornada);
+            const inicioRefeicaoMin = tempoParaMinutos(formData.inicio_refeicao);
+            const fimRefeicaoMin = tempoParaMinutos(formData.fim_refeicao);
+            
+            // Verificar se a refeição está dentro da jornada
+            if (inicioRefeicaoMin < inicioJornadaMin || fimRefeicaoMin > fimJornadaMin) {
+              Swal.fire({
+                icon: 'warning',
+                title: 'Aviso',
+                text: `Tempo de refeição (${formData.inicio_refeicao}-${formData.fim_refeicao}) está fora do tempo de jornada (${formData.inicio_jornada}-${formData.fim_jornada}). Deseja continuar mesmo assim?`,
+                showCancelButton: true,
+                confirmButtonText: 'Continuar',
+                cancelButtonText: 'Corrigir'
+              }).then((result) => {
+                if (!result.isConfirmed) {
+                  return;
+                }
+                // Se confirmou, continua com o envio
+                enviarDados();
+              });
+              return;
+            }
+          }
+        }
+        
+        // Função para calcular todos os valores antes de enviar
+        function calcularValoresAntesDeEnviar(dados) {
+          const resultado = { ...dados };
+          
+          // Se for GARAGEM ou CARGA/DESCARGA, calcular os valores
+          const motivo = dados.motivo?.toUpperCase();
+          if (motivo && (motivo.includes("GARAGEM") || motivo.includes("CARGA/DESCARGA"))) {
+            if (dados.inicio_jornada && dados.fim_jornada) {
+              // Calcular jornada total (descontando refeição)
+              const jornadaTotal = calcularJornadaTotal(
+                dados.inicio_jornada, 
+                dados.fim_jornada, 
+                dados.inicio_refeicao, 
+                dados.fim_refeicao
+              );
+              
+              // Calcular carga horária (padrão ou especial)
+              const cargaHoraria = calcularCargaHoraria(dados.motivo);
+              
+              // Calcular hora extra 50%
+              const horaExtra50 = calcularHoraExtra50(jornadaTotal, cargaHoraria);
+              
+              // Calcular hora extra noturna
+              const heNoturno = calcularHENoturno(dados.inicio_jornada, dados.fim_jornada);
+              
+              // Adicionar os valores calculados ao resultado
+              resultado.jornada_total = minutosParaTempo(jornadaTotal);
+              resultado.carga_horaria = minutosParaTempo(cargaHoraria);
+              resultado.hora_extra_50 = minutosParaTempo(horaExtra50);
+              resultado.he_noturno = minutosParaTempo(heNoturno);
+              resultado.adicional_noturno = minutosParaTempo(heNoturno);
+              // Calcular tempo de refeição (pode ser 0 se não informado)
+              const tempoRefeicao = dados.inicio_refeicao && dados.fim_refeicao ? 
+                calcularTempo(dados.inicio_refeicao, dados.fim_refeicao) : 0;
+              resultado.tempo_refeicao = minutosParaTempo(tempoRefeicao);
+              
+              console.log('Valores calculados:', {
+                jornada_total: resultado.jornada_total,
+                carga_horaria: resultado.carga_horaria,
+                hora_extra_50: resultado.hora_extra_50,
+                he_noturno: resultado.he_noturno,
+                tempo_refeicao: resultado.tempo_refeicao
+              });
+            }
+          }
+          
+          return resultado;
+        }
+        
+        // Calcular todos os valores antes de enviar
+        const dadosCalculados = calcularValoresAntesDeEnviar(formData);
+        
+        // Enviar dados diretamente aqui
+        // Iniciar o progresso
+        progressManager.startOperation('Salvando', 'Processando dados...');
+
+        // Enviar dados
+        $.ajax({
+          url: $("#form-dayoff").attr('action'),
+          method: 'POST',
+          data: JSON.stringify(dadosCalculados),
+          contentType: 'application/json',
+          success: function(response) {
+            progressManager.finishOperation();
+            if (response.status === 'success') {
+              Swal.fire({
+                icon: 'success',
+                title: 'Sucesso!',
+                text: response.message
+              }).then(() => {
+                // Limpar formulário
+                $("#form-dayoff")[0].reset();
+                $("#motorist_id").val('');
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: response.message || 'Erro ao salvar os dados.'
+              });
+            }
+          },
+          error: function(xhr) {
+            progressManager.finishOperation();
+            if (xhr.status === 409) {
+              // Conflito detectado - usar novo modal formatado
+              const response = JSON.parse(xhr.responseText);
+              
+              handleConflictResponse(response, function() {
+                // Callback para quando usuário confirma substituição
+                formData.substituir = true;
+                progressManager.startOperation('Substituindo', 'Processando dados...');
+                // Recalcular valores com substituir=true
+                const dadosSubstituicao = calcularValoresAntesDeEnviar(formData);
+                $.ajax({
+                  url: $("#form-dayoff").attr('action'),
+                  method: 'POST',
+                  data: JSON.stringify(dadosSubstituicao),
+                  contentType: 'application/json',
+                  success: function(response) {
+                    progressManager.finishOperation();
+                    if (response.status === 'success') {
+                      Swal.fire({
+                        icon: 'success',
+                        title: 'Sucesso!',
+                        text: response.message
+                      }).then(() => {
+                        // Limpar formulário
+                        $("#form-dayoff")[0].reset();
+                        $("#motorist_id").val('');
+                      });
+                    } else {
+                      Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: response.message || 'Erro ao processar a substituição.'
+                      });
+                    }
+                  },
+                  error: function(xhr) {
+                    progressManager.finishOperation();
+                    Swal.fire({
+                      icon: 'error',
+                      title: 'Erro',
+                      text: 'Erro ao processar a substituição.'
+                    });
+                  }
+                });
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: 'Erro ao salvar os dados.'
+              });
+            }
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,286 @@
+<!-- Modal de Detalhes do Motorista -->
+<div id="detailsModal" class="shared-modal">
+    <div class="shared-modal-content">
+        <div class="shared-modal-header">
+            <h2 class="shared-modal-title">Detalhes do Motorista: <span id="motoristName"></span></h2>
+            <span class="shared-modal-close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="shared-pagination">
+                <button id="deleteSelected" class="shared-btn shared-btn-danger">Excluir Selecionados</button>
+                <button id="prevButton" class="shared-btn shared-btn-primary">Anterior</button>
+                <button id="nextButton" class="shared-btn shared-btn-primary">Próximo</button>
+            </div>
+            <div class="table-wrapper">
+                <table class="shared-table details-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" class="shared-checkbox"></th>
+                            <th>Placa</th>
+                            <th>Data</th>
+                            <th>Dia da Semana</th>
+                            <th>Início Jornada</th>
+                            <th>Início Refeição</th>
+                            <th>Fim Refeição</th>
+                            <th>Fim Jornada</th>
+                            <th>Observação</th>
+                            <th>Tempo Refeição</th>
+                            <th>Interstício</th>
+                            <th>Tempo Intervalo</th>
+                            <th>Tempo C/D</th>
+                            <th>Jornada Total</th>
+                            <th>Tempo Direção</th>
+                            <th>Direção s/ Pausa</th>
+                            <th>Infrações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailsTableBody">
+                        <!-- Dados serão inseridos aqui via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="shared-btn shared-btn-primary modal-close">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos específicos para iframe - aplicados automaticamente */
+.shared-modal.iframe-modal {
+    position: absolute !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow-y: auto !important;
+}
+
+.shared-modal.iframe-modal .shared-modal-content {
+    height: calc(100vh - 60px) !important;
+    margin: 10px auto !important;
+    overflow-y: auto !important;
+}
+
+.shared-modal.iframe-modal .modal-body {
+    height: calc(100% - 150px) !important;
+    overflow-y: auto !important;
+}
+
+.shared-modal.iframe-modal .table-wrapper {
+    max-height: calc(100vh - 250px) !important;
+    overflow-y: auto !important;
+}
+
+.modal-header {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.close {
+    color: #666;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close:hover {
+    color: #333;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 15px 0 0;
+    border-top: 1px solid #ddd;
+    text-align: right;
+    margin-top: 20px;
+}
+
+.table-container {
+    margin-bottom: 20px;
+    overflow-x: auto;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* Estilos da tabela (igual à página de jornada) */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    text-align: center;
+}
+
+th {
+    background-color: #2C3E50;
+    color: #FFFFFF;
+    padding: 4px 6px;
+    font-weight: bold;
+    white-space: pre-line;
+    font-size: 11px;
+    min-width: 80px;
+}
+
+td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #e0e0e0;
+    color: #1F2937;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 13px;
+}
+
+tr:nth-child(odd) td {
+    background-color: #FFFFFF;
+}
+
+tr:nth-child(even) td {
+    background-color: #F9FAFB;
+}
+
+tr:hover td {
+    background-color: #E5E7EB;
+}
+
+/* Sobrescrevendo estilos do DataTables */
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_processing,
+.dataTables_wrapper .dataTables_paginate {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 5px 10px;
+    margin: 0 2px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #333 !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background-color: #f5f5f5 !important;
+    border-color: #ddd;
+    color: #333 !important;
+}
+
+/* Botões */
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: opacity 0.2s;
+    margin-left: 10px;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.8;
+}
+
+/* Estilo para checkbox */
+#selectAll,
+.record-select {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Garantir que o cabeçalho da tabela fique fixo durante o scroll */
+.table-container table thead th {
+    position: sticky;
+    top: 0;
+    background: #2C3E50;
+    color: white;
+    z-index: 10;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-height: calc(100vh - 20px);
+        margin: 10px auto;
+        padding: 15px;
+    }
+    
+    .table-container {
+        max-height: 50vh;
+    }
+}
+
+/* Script para detectar iframe e aplicar estilos */
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Detecta se está em um iframe
+    if (window !== window.top) {
+        const modal = document.querySelector('#detailsModal');
+        if (modal) {
+            modal.classList.add('iframe-modal');
+        }
+        
+        // Aplica estilos quando o modal for aberto
+        const originalShow = window.showModalDetails || function() {};
+        window.showModalDetails = function() {
+            const modal = document.getElementById('detailsModal');
+            if (modal) {
+                modal.classList.add('iframe-modal');
+            }
+            originalShow.apply(this, arguments);
+        };
+        
+        // Intercepta o clique no botão de detalhes
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('view-details')) {
+                setTimeout(function() {
+                    const modal = document.getElementById('detailsModal');
+                    if (modal) {
+                        modal.classList.add('iframe-modal');
+                    }
+                }, 100);
+            }
+        });
+    }
+});
+</script>
+</style> 

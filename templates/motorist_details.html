@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Detalhes do Motorista - {{ motorist.nome }}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/motorists.css') }}"/>
+    
+    <script src="{{ url_for('static', filename='js/motorist-edit.js') }}" defer></script>
+    
+    <style>
+        .details-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            animation: slideInDown 0.6s ease-out;
+        }
+
+        .header-section h1 {
+            font-size: 24px;
+            margin: 0 0 8px 0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+
+        .status-ativo {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-inativo {
+            background: #dc3545;
+            color: white;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .verification-cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .detail-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .detail-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .detail-card:nth-child(1) { animation-delay: 0.1s; }
+        .detail-card:nth-child(2) { animation-delay: 0.2s; }
+        .detail-card:nth-child(3) { animation-delay: 0.3s; }
+        .detail-card:nth-child(4) { animation-delay: 0.4s; }
+        .detail-card:nth-child(5) { animation-delay: 0.5s; }
+        .detail-card:nth-child(6) { animation-delay: 0.6s; }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-title i {
+            margin-right: 10px;
+            color: #3498db;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: right;
+            max-width: 60%;
+            word-wrap: break-word;
+        }
+
+        .info-value.empty {
+            color: #bdc3c7;
+            font-style: italic;
+        }
+
+        .verification-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+        }
+
+        .verification-card .card-title {
+            color: white;
+            border-bottom-color: rgba(255,255,255,0.3);
+            font-size: 14px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+        }
+
+        .verification-card .info-label {
+            color: rgba(255,255,255,0.8);
+            font-size: 12px;
+        }
+
+        .verification-card .info-value {
+            color: white;
+            font-size: 12px;
+        }
+
+        .back-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .back-button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: white;
+        }
+
+        .back-button i {
+            margin-right: 8px;
+        }
+
+        .edit-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            opacity: 0.8;
+        }
+
+        .edit-button:hover {
+            background: #2980b9;
+            opacity: 1;
+        }
+
+        .detail-card {
+            position: relative;
+        }
+
+        .edit-mode .info-value {
+            display: none;
+        }
+
+        .edit-mode .info-input {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .info-input {
+            display: none;
+        }
+
+                 .info-input.error {
+             border-color: #dc3545;
+             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+         }
+
+         .verification-card .info-input {
+             background: rgba(255, 255, 255, 0.9);
+             color: #2c3e50;
+             border: 1px solid rgba(255, 255, 255, 0.3);
+         }
+
+         .verification-card .info-input:focus {
+             background: white;
+             border-color: #3498db;
+             outline: none;
+         }
+
+        .save-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            opacity: 0.8;
+        }
+
+        .save-button:hover {
+            background: #218838;
+            opacity: 1;
+        }
+
+        .cancel-button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: absolute;
+            top: 15px;
+            right: 50px;
+            opacity: 0.8;
+        }
+
+        .cancel-button:hover {
+            background: #c82333;
+            opacity: 1;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .details-container {
+                padding: 15px;
+            }
+
+            .header-section {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .verification-cards-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .detail-card {
+                padding: 20px;
+            }
+
+            .verification-card {
+                padding: 15px;
+            }
+
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .info-value {
+                text-align: left;
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-section {
+                padding: 15px;
+            }
+
+            .detail-card {
+                padding: 15px;
+            }
+
+            .card-title {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div class="details-container">
+            <!-- Botão Voltar -->
+            <a href="{{ url_for('config.motorist_config') }}" class="back-button">
+                <i>←</i> Voltar para Motoristas
+            </a>
+
+            <!-- Cabeçalho com Status -->
+            <div class="header-section">
+                <h1>{{ motorist.nome }}</h1>
+                <div class="status-badge status-{{ motorist.status.lower() if motorist.status else 'inativo' }}">
+                    {{ motorist.status or 'Status não informado' }}
+                </div>
+            </div>
+
+            <!-- Grid de Cards -->
+            <div class="cards-grid">
+                <!-- Informações Pessoais -->
+                <div class="detail-card" data-card-type="personal">
+                    <button class="edit-button" onclick="editCard('personal', {{ motorist.id }})">✏️</button>
+                    <div class="card-title">
+                        <i>👤</i> Informações Pessoais
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Nome Completo</span>
+                        <span class="info-value">{{ motorist.nome or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="nome" value="{{ motorist.nome or '' }}" placeholder="Nome completo">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">CPF</span>
+                        <span class="info-value">{{ motorist.cpf or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="cpf" value="{{ motorist.cpf or '' }}" placeholder="000.000.000-00">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">RG</span>
+                        <span class="info-value">{{ motorist.rg or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="rg" value="{{ motorist.rg or '' }}" placeholder="RG">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Data de Nascimento</span>
+                        <span class="info-value">{{ motorist.data_nascimento or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="data_nascimento" value="{{ motorist.data_nascimento or '' }}" placeholder="dd/mm/aaaa">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Estado Civil</span>
+                        <span class="info-value">{{ motorist.estado_civil or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="estado_civil" value="{{ motorist.estado_civil or '' }}" placeholder="Estado civil">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Filiação</span>
+                        <span class="info-value">{{ motorist.filiacao or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="filiacao" value="{{ motorist.filiacao or '' }}" placeholder="Filiação">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Número de Filhos</span>
+                        <span class="info-value">{{ motorist.filhos or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="filhos" value="{{ motorist.filhos or '' }}" placeholder="Número de filhos">
+                    </div>
+                </div>
+
+                <!-- Informações Profissionais -->
+                <div class="detail-card" data-card-type="professional">
+                    <button class="edit-button" onclick="editCard('professional', {{ motorist.id }})">✏️</button>
+                    <div class="card-title">
+                        <i>💼</i> Informações Profissionais
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Cargo</span>
+                        <span class="info-value">{{ motorist.cargo or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="cargo" value="{{ motorist.cargo or '' }}" placeholder="Cargo">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Empresa</span>
+                        <span class="info-value">{{ motorist.empresa or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="empresa" value="{{ motorist.empresa or '' }}" placeholder="Empresa">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Operação</span>
+                        <span class="info-value">{{ motorist.operacao or 'Não informado' }}</span>
+                        <select class="info-input" name="operacao">
+                            <option value="">Selecione</option>
+                            <option value="VIBRA" {% if motorist.operacao == 'VIBRA' %}selected{% endif %}>VIBRA</option>
+                            <option value="ALE" {% if motorist.operacao == 'ALE' %}selected{% endif %}>ALE</option>
+                            <option value="SADA" {% if motorist.operacao == 'SADA' %}selected{% endif %}>SADA</option>
+                            <option value="ESCURO" {% if motorist.operacao == 'ESCURO' %}selected{% endif %}>ESCURO</option>
+                        </select>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Data de Admissão</span>
+                        <span class="info-value">{{ motorist.data_admissao or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="data_admissao" value="{{ motorist.data_admissao or '' }}" placeholder="dd/mm/aaaa">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Código SAP</span>
+                        <span class="info-value">{{ motorist.codigo_sap or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="codigo_sap" value="{{ motorist.codigo_sap or '' }}" placeholder="Código SAP">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">CTPS</span>
+                        <span class="info-value">{{ motorist.ctps or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="ctps" value="{{ motorist.ctps or '' }}" placeholder="CTPS">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Série</span>
+                        <span class="info-value">{{ motorist.serie or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="serie" value="{{ motorist.serie or '' }}" placeholder="Série">
+                    </div>
+                </div>
+
+                <!-- Documentos de Habilitação -->
+                <div class="detail-card" data-card-type="documents">
+                    <button class="edit-button" onclick="editCard('documents', {{ motorist.id }})">✏️</button>
+                    <div class="card-title">
+                        <i>🚗</i> Documentos de Habilitação
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">CNH</span>
+                        <span class="info-value">{{ motorist.cnh or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="cnh" value="{{ motorist.cnh or '' }}" placeholder="CNH">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Data Primeira CNH</span>
+                        <span class="info-value">{{ motorist.primeira_cnh or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="primeira_cnh" value="{{ motorist.primeira_cnh or '' }}" placeholder="dd/mm/aaaa">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Data de Expedição</span>
+                        <span class="info-value">{{ motorist.data_expedicao or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="data_expedicao" value="{{ motorist.data_expedicao or '' }}" placeholder="dd/mm/aaaa">
+                    </div>
+                                         <div class="info-row">
+                         <span class="info-label">Vencimento CNH</span>
+                         <span class="info-value" data-field-name="vencimento_cnh">{{ motorist.vencimento_cnh or 'Não informado' }}</span>
+                         <input type="text" class="info-input" name="vencimento_cnh" data-field-name="vencimento_cnh" value="{{ motorist.vencimento_cnh or '' }}" placeholder="dd/mm/aaaa">
+                     </div>
+                    <div class="info-row">
+                        <span class="info-label">MOPP</span>
+                        <span class="info-value">{{ motorist.done_mopp or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="done_mopp" value="{{ motorist.done_mopp or '' }}" placeholder="dd/mm/aaaa">
+                    </div>
+                                         <div class="info-row">
+                         <span class="info-label">Vencimento MOPP</span>
+                         <span class="info-value" data-field-name="vencimento_mopp">{{ motorist.vencimento_mopp or 'Não informado' }}</span>
+                         <input type="text" class="info-input" name="vencimento_mopp" data-field-name="vencimento_mopp" value="{{ motorist.vencimento_mopp or '' }}" placeholder="dd/mm/aaaa">
+                     </div>
+                </div>
+
+                <!-- Exames Médicos -->
+                <div class="detail-card" data-card-type="medical">
+                    <button class="edit-button" onclick="editCard('medical', {{ motorist.id }})">✏️</button>
+                    <div class="card-title">
+                        <i>🏥</i> Exames Médicos
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Toxicológico CLT</span>
+                        <span class="info-value">{{ motorist.done_toxicologico_clt or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="done_toxicologico_clt" value="{{ motorist.done_toxicologico_clt or '' }}" placeholder="dd/mm/aaaa">
+                    </div>
+                                         <div class="info-row">
+                         <span class="info-label">Vencimento Toxicológico CLT</span>
+                         <span class="info-value" data-field-name="vencimento_toxicologico_clt">{{ motorist.vencimento_toxicologico_clt or 'Não informado' }}</span>
+                         <input type="text" class="info-input" name="vencimento_toxicologico_clt" data-field-name="vencimento_toxicologico_clt" value="{{ motorist.vencimento_toxicologico_clt or '' }}" placeholder="dd/mm/aaaa">
+                     </div>
+                    <div class="info-row">
+                        <span class="info-label">Toxicológico CNH</span>
+                        <span class="info-value">{{ motorist.done_toxicologico_cnh or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="done_toxicologico_cnh" value="{{ motorist.done_toxicologico_cnh or '' }}" placeholder="dd/mm/aaaa">
+                    </div>
+                                         <div class="info-row">
+                         <span class="info-label">Vencimento Toxicológico CNH</span>
+                         <span class="info-value" data-field-name="vencimento_toxicologico_cnh">{{ motorist.vencimento_toxicologico_cnh or 'Não informado' }}</span>
+                         <input type="text" class="info-input" name="vencimento_toxicologico_cnh" data-field-name="vencimento_toxicologico_cnh" value="{{ motorist.vencimento_toxicologico_cnh or '' }}" placeholder="dd/mm/aaaa">
+                     </div>
+                    <div class="info-row">
+                        <span class="info-label">ASO Semestral</span>
+                        <span class="info-value">{{ motorist.done_aso_semestral or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="done_aso_semestral" value="{{ motorist.done_aso_semestral or '' }}" placeholder="dd/mm/aaaa">
+                    </div>
+                                         <div class="info-row">
+                         <span class="info-label">Vencimento ASO Semestral</span>
+                         <span class="info-value" data-field-name="vencimento_aso_semestral">{{ motorist.vencimento_aso_semestral or 'Não informado' }}</span>
+                         <input type="text" class="info-input" name="vencimento_aso_semestral" data-field-name="vencimento_aso_semestral" value="{{ motorist.vencimento_aso_semestral or '' }}" placeholder="dd/mm/aaaa">
+                     </div>
+                    <div class="info-row">
+                        <span class="info-label">ASO Periódico</span>
+                        <span class="info-value">{{ motorist.done_aso_periodico or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="done_aso_periodico" value="{{ motorist.done_aso_periodico or '' }}" placeholder="dd/mm/aaaa">
+                    </div>
+                                         <div class="info-row">
+                         <span class="info-label">Vencimento ASO Periódico</span>
+                         <span class="info-value" data-field-name="vencimento_aso_periodico">{{ motorist.vencimento_aso_periodico or 'Não informado' }}</span>
+                         <input type="text" class="info-input" name="vencimento_aso_periodico" data-field-name="vencimento_aso_periodico" value="{{ motorist.vencimento_aso_periodico or '' }}" placeholder="dd/mm/aaaa">
+                     </div>
+                </div>
+
+                <!-- Outros Documentos -->
+                <div class="detail-card" data-card-type="other">
+                    <button class="edit-button" onclick="editCard('other', {{ motorist.id }})">✏️</button>
+                    <div class="card-title">
+                        <i>📋</i> Outros Documentos
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Buonny</span>
+                        <span class="info-value">{{ motorist.done_buonny or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="done_buonny" value="{{ motorist.done_buonny or '' }}" placeholder="dd/mm/aaaa">
+                    </div>
+                                         <div class="info-row">
+                         <span class="info-label">Vencimento Buonny</span>
+                         <span class="info-value" data-field-name="vencimento_buonny">{{ motorist.vencimento_buonny or 'Não informado' }}</span>
+                         <input type="text" class="info-input" name="vencimento_buonny" data-field-name="vencimento_buonny" value="{{ motorist.vencimento_buonny or '' }}" placeholder="dd/mm/aaaa">
+                     </div>
+                    <div class="info-row">
+                        <span class="info-label">Telefone</span>
+                        <span class="info-value">{{ motorist.telefone or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="telefone" value="{{ motorist.telefone or '' }}" placeholder="Telefone">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value">{{ motorist.email or 'Não informado' }}</span>
+                        <input type="email" class="info-input" name="email" value="{{ motorist.email or '' }}" placeholder="Email">
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Endereço</span>
+                        <span class="info-value">{{ motorist.endereco or 'Não informado' }}</span>
+                        <input type="text" class="info-input" name="endereco" value="{{ motorist.endereco or '' }}" placeholder="Endereço">
+                    </div>
+                </div>
+
+                <!-- Treinamentos -->
+                <div class="detail-card" data-card-type="training">
+                    <div class="card-title">
+                        <i>🎓</i> Treinamentos
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Status</span>
+                        <span class="info-value">
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white; font-size: 16px; font-weight: 500; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                                <div>
+                                    <div style="font-size: 24px; margin-bottom: 8px;">🚧</div>
+                                    <div>Em Desenvolvimento</div>
+                                    <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">Funcionalidade em breve</div>
+                                </div>
+                            </div>
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Cards de Verificação (Menores) -->
+            <div class="verification-cards-container">
+                                 <div class="detail-card verification-card" data-card-type="verification-jornada">
+                     <button class="edit-button" onclick="editCard('verification-jornada', {{ motorist.id }})">✏️</button>
+                     <div class="card-title">
+                         <i>✅</i> Verificação de Jornada
+                     </div>
+                     <div class="info-row">
+                         <span class="info-label">Status</span>
+                         <span class="info-value">{{ motorist.conf_jornada or 'Não informado' }}</span>
+                         <select class="info-input" name="conf_jornada">
+                             <option value="">Selecione</option>
+                             <option value="Ativo" {% if motorist.conf_jornada == 'Ativo' %}selected{% endif %}>Ativo</option>
+                             <option value="Inativo" {% if motorist.conf_jornada == 'Inativo' %}selected{% endif %}>Inativo</option>
+                         </select>
+                     </div>
+                 </div>
+
+                 <div class="detail-card verification-card" data-card-type="verification-fechamento">
+                     <button class="edit-button" onclick="editCard('verification-fechamento', {{ motorist.id }})">✏️</button>
+                     <div class="card-title">
+                         <i>🔍</i> Verificação de Fechamento
+                     </div>
+                     <div class="info-row">
+                         <span class="info-label">Status</span>
+                         <span class="info-value">{{ motorist.conf_fecham or 'Não informado' }}</span>
+                         <select class="info-input" name="conf_fecham">
+                             <option value="">Selecione</option>
+                             <option value="Ativo" {% if motorist.conf_fecham == 'Ativo' %}selected{% endif %}>Ativo</option>
+                             <option value="Inativo" {% if motorist.conf_fecham == 'Inativo' %}selected{% endif %}>Inativo</option>
+                         </select>
+                     </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentEditCard = null;
+        let originalData = {};
+
+        function editCard(cardType, motoristId) {
+            // Se já está editando outro card, cancela primeiro
+            if (currentEditCard && currentEditCard !== cardType) {
+                cancelEdit();
+            }
+
+            const card = document.querySelector(`[data-card-type="${cardType}"]`);
+            if (!card) return;
+
+            // Salva dados originais
+            originalData[cardType] = {};
+            const inputs = card.querySelectorAll('.info-input');
+            inputs.forEach(input => {
+                originalData[cardType][input.name] = input.value;
+            });
+
+            // Ativa modo de edição
+            card.classList.add('edit-mode');
+            currentEditCard = cardType;
+
+            // Substitui botão de editar por salvar e cancelar
+            const editButton = card.querySelector('.edit-button');
+            editButton.style.display = 'none';
+
+            // Adiciona botões de salvar e cancelar
+            const saveButton = document.createElement('button');
+            saveButton.className = 'save-button';
+            saveButton.innerHTML = '💾';
+            saveButton.onclick = () => saveCard(cardType, motoristId);
+            card.appendChild(saveButton);
+
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'cancel-button';
+            cancelButton.innerHTML = '❌';
+            cancelButton.onclick = cancelEdit;
+            card.appendChild(cancelButton);
+
+            // Reinicializa máscaras e validações para os campos de edição
+            reinitializeEditMasks();
+        }
+
+        function cancelEdit() {
+            if (!currentEditCard) return;
+
+            const card = document.querySelector(`[data-card-type="${currentEditCard}"]`);
+            if (!card) return;
+
+            // Restaura dados originais
+            const inputs = card.querySelectorAll('.info-input');
+            inputs.forEach(input => {
+                if (originalData[currentEditCard][input.name] !== undefined) {
+                    input.value = originalData[currentEditCard][input.name];
+                }
+            });
+
+            // Remove modo de edição
+            card.classList.remove('edit-mode');
+            
+            // Remove botões de salvar e cancelar
+            const saveButton = card.querySelector('.save-button');
+            const cancelButton = card.querySelector('.cancel-button');
+            if (saveButton) saveButton.remove();
+            if (cancelButton) cancelButton.remove();
+
+            // Mostra botão de editar novamente
+            const editButton = card.querySelector('.edit-button');
+            editButton.style.display = 'block';
+
+            // Limpa erros de validação
+            clearAllEditErrors();
+
+            currentEditCard = null;
+        }
+
+        function saveCard(cardType, motoristId) {
+            const card = document.querySelector(`[data-card-type="${cardType}"]`);
+            if (!card) return;
+
+            // Valida os campos antes de salvar
+            const inputs = card.querySelectorAll('.info-input');
+            let hasErrors = false;
+
+            inputs.forEach(input => {
+                // Valida CPF
+                if (input.name === 'cpf' && input.value) {
+                    const cpfValue = input.value.replace(/\D/g, '');
+                    if (cpfValue.length !== 11) {
+                        showEditFieldError(input, 'CPF inválido');
+                        hasErrors = true;
+                    }
+                }
+
+                // Valida CNH
+                if (input.name === 'cnh' && input.value) {
+                    const cnhValue = input.value.replace(/\D/g, '');
+                    if (cnhValue.length !== 11) {
+                        showEditFieldError(input, 'CNH inválida');
+                        hasErrors = true;
+                    }
+                }
+
+                                 // Valida datas - Todos os campos de data
+                 if ((input.placeholder && input.placeholder.includes('dd/mm/aaaa')) || 
+                     input.name.includes('vencimento') || 
+                     input.name.includes('data_') || 
+                     input.name === 'primeira_cnh' || 
+                     input.name === 'data_expedicao' || 
+                     input.name === 'data_admissao' || 
+                     input.name === 'data_nascimento' ||
+                     input.name === 'done_toxicologico_clt' ||
+                     input.name === 'done_toxicologico_cnh' ||
+                     input.name === 'done_aso_semestral' ||
+                     input.name === 'done_aso_periodico' ||
+                     input.name === 'done_mopp' ||
+                     input.name === 'done_buonny') {
+                     if (input.value && !isValidDate(input.value)) {
+                         showEditFieldError(input, 'Data inválida');
+                         hasErrors = true;
+                     }
+                 }
+
+                // Valida email
+                if (input.name === 'email' && input.value) {
+                    if (!isValidEmail(input.value)) {
+                        showEditFieldError(input, 'Email inválido');
+                        hasErrors = true;
+                    }
+                }
+            });
+
+            if (hasErrors) {
+                showErrorMessage('Corrija os erros antes de salvar');
+                return;
+            }
+
+            // Coleta dados do formulário
+            const formData = new FormData();
+            formData.append('motorist_id', motoristId);
+            formData.append('card_type', cardType);
+
+            inputs.forEach(input => {
+                formData.append(input.name, input.value);
+            });
+
+            // Mostra overlay de progresso
+            showProgressOverlay();
+
+            // Envia dados para o servidor
+            fetch('/api/update_motorist_card', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideProgressOverlay();
+                
+                if (data.success) {
+                                         // Atualiza os valores exibidos
+                     inputs.forEach(input => {
+                         const valueSpan = input.parentElement.querySelector('.info-value');
+                         if (valueSpan) {
+                             // Para campos select, pega o texto da opção selecionada
+                             if (input.tagName === 'SELECT') {
+                                 const selectedOption = input.options[input.selectedIndex];
+                                 valueSpan.textContent = selectedOption ? selectedOption.text : 'Não informado';
+                             } else {
+                                 valueSpan.textContent = input.value || 'Não informado';
+                             }
+                         }
+                     });
+
+                    // Remove modo de edição
+                    card.classList.remove('edit-mode');
+                    
+                    // Remove botões de salvar e cancelar
+                    const saveButton = card.querySelector('.save-button');
+                    const cancelButton = card.querySelector('.cancel-button');
+                    if (saveButton) saveButton.remove();
+                    if (cancelButton) cancelButton.remove();
+
+                    // Mostra botão de editar novamente
+                    const editButton = card.querySelector('.edit-button');
+                    editButton.style.display = 'block';
+
+                    // Limpa erros de validação
+                    clearAllEditErrors();
+
+                    currentEditCard = null;
+
+                    // Mostra mensagem de sucesso
+                    showSuccessMessage('Dados atualizados com sucesso!');
+                } else {
+                    showErrorMessage(data.message || 'Erro ao atualizar dados');
+                }
+            })
+            .catch(error => {
+                hideProgressOverlay();
+                showErrorMessage('Erro ao conectar com o servidor');
+                console.error('Error:', error);
+            });
+        }
+
+        function showProgressOverlay() {
+            // Cria overlay de progresso se não existir
+            let overlay = document.getElementById('progress-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'progress-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999;
+                `;
+                
+                overlay.innerHTML = `
+                    <div style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
+                        <div style="margin-bottom: 10px;">Salvando...</div>
+                        <div style="width: 50px; height: 50px; border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                    </div>
+                `;
+                
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+                document.body.appendChild(overlay);
+            }
+            overlay.style.display = 'flex';
+        }
+
+        function hideProgressOverlay() {
+            const overlay = document.getElementById('progress-overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+
+        function showSuccessMessage(message) {
+            showMessage(message, 'success');
+        }
+
+        function showErrorMessage(message) {
+            showMessage(message, 'error');
+        }
+
+        function showMessage(message, type) {
+            // Remove mensagens existentes
+            const existingMessages = document.querySelectorAll('.flash-message');
+            existingMessages.forEach(msg => msg.remove());
+
+            // Cria nova mensagem
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flash-message ${type}`;
+            messageDiv.style.cssText = `
+                padding: 10px;
+                margin: 10px 20px;
+                border-radius: 5px;
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                ${type === 'success' ? 'background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;' : 'background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;'}
+            `;
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+
+            // Remove mensagem após 3 segundos
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 3000);
+        }
+
+        // Funções de validação
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function isValidDate(dateStr) {
+            if (!dateStr || dateStr.length !== 10) return false;
+            
+            const parts = dateStr.split('/');
+            if (parts.length !== 3) return false;
+            
+            const day = parseInt(parts[0]);
+            const month = parseInt(parts[1]);
+            const year = parseInt(parts[2]);
+            
+            if (isNaN(day) || isNaN(month) || isNaN(year)) return false;
+            
+            if (day < 1 || day > 31) return false;
+            if (month < 1 || month > 12) return false;
+            if (year < 1900 || year > 2100) return false;
+            
+            return true;
+        }
+
+        function showEditFieldError(field, message) {
+            // Remove erro anterior
+            clearEditFieldError(field);
+            
+            // Adiciona classe de erro
+            field.classList.add('error');
+            
+            // Cria mensagem de erro
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error';
+            errorDiv.textContent = message;
+            errorDiv.style.cssText = `
+                color: #dc3545;
+                font-size: 12px;
+                margin-top: 2px;
+                font-style: italic;
+            `;
+            
+            // Insere após o campo
+            field.parentNode.appendChild(errorDiv);
+        }
+
+        function clearEditFieldError(field) {
+            field.classList.remove('error');
+            const errorDiv = field.parentNode.querySelector('.field-error');
+            if (errorDiv) {
+                errorDiv.remove();
+            }
+        }
+
+        function clearAllEditErrors() {
+            document.querySelectorAll('.info-input.error').forEach(field => {
+                clearEditFieldError(field);
+            });
+        }
+
+        // Função para verificar se uma data está vencida ou próxima do vencimento
+        function checkExpirationStatus(dateStr) {
+            if (!dateStr || dateStr.length !== 10) return 'valid';
+            
+            const parts = dateStr.split('/');
+            if (parts.length !== 3) return 'valid';
+            
+            const day = parseInt(parts[0]);
+            const month = parseInt(parts[1]);
+            const year = parseInt(parts[2]);
+            
+            if (isNaN(day) || isNaN(month) || isNaN(year)) return 'valid';
+            
+            // Cria a data de vencimento (GMT-3)
+            const expirationDate = new Date(year, month - 1, day, 23, 59, 59);
+            
+            // Data atual em GMT-3
+            const now = new Date();
+            const gmt3Offset = -3 * 60; // GMT-3 em minutos
+            const localOffset = now.getTimezoneOffset();
+            const totalOffset = gmt3Offset + localOffset;
+            const currentDate = new Date(now.getTime() + (totalOffset * 60 * 1000));
+            
+            // Calcula a diferença em dias
+            const diffTime = expirationDate.getTime() - currentDate.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return 'expired'; // Vencido
+            } else if (diffDays <= 30) {
+                return 'warning'; // Próximo do vencimento (30 dias ou menos)
+            } else {
+                return 'valid'; // Válido
+            }
+        }
+
+        // Função para aplicar estilos de vencimento
+        function applyExpirationStyles() {
+            const vencimentoFields = document.querySelectorAll('.info-value[data-field-name*="vencimento"], .info-input[name*="vencimento"]');
+            
+            vencimentoFields.forEach(field => {
+                const dateValue = field.value || field.textContent;
+                const status = checkExpirationStatus(dateValue);
+                
+                // Remove classes anteriores
+                field.classList.remove('expired', 'warning', 'valid');
+                
+                // Aplica a classe correspondente
+                field.classList.add(status);
+            });
+        }
+
+        // Função para atualizar estilos após edição
+        function updateExpirationStylesAfterEdit() {
+            setTimeout(() => {
+                applyExpirationStyles();
+            }, 100);
+        }
+
+        // Aplica estilos na inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            applyExpirationStyles();
+            
+            // Adiciona listener para campos de vencimento em modo de edição
+            document.addEventListener('input', function(e) {
+                if (e.target.name && e.target.name.includes('vencimento')) {
+                    const status = checkExpirationStatus(e.target.value);
+                    e.target.classList.remove('expired', 'warning', 'valid');
+                    e.target.classList.add(status);
+                }
+            });
+        });
+
+        // Modifica a função saveCard para atualizar estilos após salvar
+        const originalSaveCard = saveCard;
+        saveCard = function(cardType, motoristId) {
+            originalSaveCard(cardType, motoristId);
+            // Atualiza estilos após salvar
+            setTimeout(() => {
+                applyExpirationStyles();
+            }, 500);
+        };
+    </script>
+
+    <style>
+        /* Estilos para campos de vencimento */
+        .info-value.expired,
+        .info-input.expired {
+            background-color: #ffebee !important;
+            color: #c62828 !important;
+            font-weight: bold !important;
+            border-radius: 4px;
+            padding: 2px 6px;
+        }
+
+        .info-value.warning,
+        .info-input.warning {
+            background-color: #fff3e0 !important;
+            color: #ef6c00 !important;
+            font-weight: bold !important;
+            border-radius: 4px;
+            padding: 2px 6px;
+        }
+
+        .info-value.valid,
+        .info-input.valid {
+            /* Mantém o estilo padrão */
+        }
+
+        /* Ajustes para campos de input em modo de edição */
+        .edit-mode .info-input.expired {
+            background-color: #ffebee !important;
+            border-color: #c62828 !important;
+            color: #c62828 !important;
+        }
+
+        .edit-mode .info-input.warning {
+            background-color: #fff3e0 !important;
+            border-color: #ef6c00 !important;
+            color: #ef6c00 !important;
+        }
+    </style>
+</body>
+</html> 

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Usuários</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}"/>
+</head>
+<body>
+<div class="content">
+    <h1>Lista de Usuários</h1>
+
+    <!-- Formulário para adicionar um novo usuário -->
+    <div class="form-container">
+        <h3>Adicionar Novo Usuário</h3>
+        <form action="/users" method="POST" autocomplete="off">
+            <input type="text" name="name" placeholder="Nome do usuário" required><br>
+            <input type="email" name="email" placeholder="Email" required><br>
+            <input type="password" name="password" placeholder="Senha" required><br>
+            
+            <div style="margin: 15px 0;">
+                <label class="admin-checkbox" style="display: flex; align-items: center; gap: 4px;">
+                    <input type="checkbox" name="is_admin" style="width: 16px; height: 16px;">
+                    Usuário Administrador
+                </label>
+            </div>
+
+            <!-- Seleção de Setores Autorizados -->
+            <div class="routes-selection">
+                <h4>Setores Autorizados:</h4>
+                <p><small>Administradores têm acesso a todos os setores automaticamente.</small></p>
+                <p><small><strong>Acesso automático:</strong> "Público" (sem login). <strong>Obrigatório:</strong> "Comum" (todos os usuários).</small></p>
+                {% if routes_sectors %}
+                    <div class="route-checkboxes">
+                        {% for sector in routes_sectors %}
+                            <label class="route-checkbox" style="display: block; margin: 10px 0; display: flex; align-items: center; gap: 4px;">
+                                {% if sector == 'Comum' %}
+                                    <input type="checkbox" name="authorized_routes" value="{{ sector }}" style="width: 16px; height: 16px;" checked disabled>
+                                    <input type="hidden" name="authorized_routes" value="{{ sector }}">
+                                    <span class="route-name">{{ sector }} <strong>(obrigatório)</strong></span>
+                                {% else %}
+                                    <input type="checkbox" name="authorized_routes" value="{{ sector }}" style="width: 16px; height: 16px;">
+                                    <span class="route-name">{{ sector }}</span>
+                                {% endif %}
+                            </label>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="route-actions" style="margin: 20px 0;">
+                    <button type="button" onclick="selectAllRoutes()">Selecionar Todos</button>
+                    <button type="button" onclick="deselectAllRoutes()">Desmarcar Todos</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 25px;">
+                <button type="submit">Adicionar Usuário</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabela de usuários -->
+    <table>
+        <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Senha</th>
+            <th>Administrador</th>
+            <th>Setores Autorizados</th>
+            <th>Editar</th>
+            <th>Excluir</th>
+        </tr>
+
+        {% for user in users %}
+        <tr>
+            <td>{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.password }}</td>
+            <td>
+                {% if user.is_admin %}
+                    <span class="admin-badge">✓ Sim</span>
+                {% else %}
+                    <span class="user-badge">✗ Não</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if user.is_admin %}
+                    <span class="admin-access">Acesso Total</span>
+                {% else %}
+                    {% set user_sectors = user.authorized_routes | from_json %}
+                    {% if user_sectors %}
+                        <div class="routes-summary">
+                            <span class="routes-count">{{ user_sectors | length }} setores</span>
+                            <button type="button" onclick="toggleRoutesList('sectors-{{ loop.index0 }}')" class="view-routes-btn">Ver</button>
+                            <div id="sectors-{{ loop.index0 }}" class="routes-list" style="display: none;">
+                                {% for sector in user_sectors %}
+                                    <div class="route-item">{{ sector }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <span class="no-routes">Nenhum setor</span>
+                    {% endif %}
+                {% endif %}
+            </td>
+            <td>
+
+                <button type="button" onclick='show_edit_div({{ user.name | tojson }}, {{ user.email | tojson }}, {{ user.password | tojson }}, {{ (user.is_admin) | tojson }}, {{ (user.authorized_routes or "[]") | tojson }})'>
+                    Editar
+                </button>
+
+            </td>
+            <td>
+                <form action="/users" method="POST" autocomplete="off">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <input type="hidden" name="selected_email" value="{{ user.email }}">
+                    <button type="submit">Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <br>
+
+    <!-- Overlay escuro para o formulário de edição -->
+    <div id="edit-overlay" class="edit-overlay" hidden style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 9998; display: none;" onclick="hideEditDiv()"></div>
+
+    <!-- Formulário de Edição e Exclusão - MOVIDO PARA FORA -->
+    <div id="edit-div" class="form-container" hidden style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; background-color: white; border: 2px solid #333; padding: 20px; margin: 0; width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3); border-radius: 8px;">
+        <!-- Botão de fechar no canto superior direito -->
+        <button type="button" onclick="hideEditDiv()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 20px; cursor: pointer; color: #666; padding: 5px; line-height: 1;">&times;</button>
+        
+        <h3>Editar Usuário</h3>
+        <form action="/users" method="POST" autocomplete="off">
+            <!-- Editar Usuário -->
+            <div>
+                <input type="hidden" name="_method" value="PUT">
+                <input type="hidden" name="_edited_email" id="edited-email">
+                <span id="edit-info"></span><br>
+                <br>
+                <input type="text" name="user_name" id="edit-name" placeholder="Nome do usuário" required><br>
+                <input type="email" name="user_email" id="edit-email" placeholder="Email" required><br>
+                <input type="password" name="user_password" id="edit-password" placeholder="Senha" required><br>
+                
+                <div style="margin: 15px 0;">
+                    <label class="admin-checkbox" style="display: flex; align-items: center; gap: 4px;">
+                        <input type="checkbox" name="is_admin" id="edit-is-admin" style="width: 16px; height: 16px;">
+                        Usuário Administrador
+                    </label>
+                </div>
+
+                <!-- Seleção de Setores Autorizados para Edição -->
+                <div class="routes-selection" id="edit-routes-selection">
+                    <h4>Setores Autorizados:</h4>
+                    <p><small>Administradores têm acesso a todos os setores automaticamente.</small></p>
+                    <p><small><strong>Acesso automático:</strong> "Público" (sem login). <strong>Obrigatório:</strong> "Comum" (todos os usuários).</small></p>
+                    {% if routes_sectors %}
+                        <div class="route-checkboxes">
+                            {% for sector in routes_sectors %}
+                                <label class="route-checkbox" style="display: block; margin: 10px 0; display: flex; align-items: center; gap: 4px;">
+                                    {% if sector == 'Comum' %}
+                                        <input type="checkbox" name="authorized_routes" value="{{ sector }}" class="edit-route-checkbox" style="width: 16px; height: 16px;" checked disabled>
+                                        <input type="hidden" name="authorized_routes" value="{{ sector }}">
+                                        <span class="route-name">{{ sector }} <strong>(obrigatório)</strong></span>
+                                    {% else %}
+                                        <input type="checkbox" name="authorized_routes" value="{{ sector }}" class="edit-route-checkbox" style="width: 16px; height: 16px;">
+                                        <span class="route-name">{{ sector }}</span>
+                                    {% endif %}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="route-actions" style="margin: 20px 0;">
+                        <button type="button" onclick="selectAllEditRoutes()">Selecionar Todos</button>
+                        <button type="button" onclick="deselectAllEditRoutes()">Desmarcar Todos</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 25px;">
+                    <button type="submit">Salvar Alterações</button>
+                    <button type="button" onclick="hideEditDiv()" style="margin-left: 10px; background-color: #666;">Cancelar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function show_edit_div(name, email, password, isAdmin, authorizedRoutes = '[]') {
+            console.log('show_edit_div chamada com:', { name, email, password, isAdmin, authorizedRoutes });
+            
+            const edit_div = document.getElementById("edit-div");
+            const edit_overlay = document.getElementById("edit-overlay");
+            
+            if (!edit_div) {
+                console.error('Elemento edit-div não encontrado!');
+                return;
+            }
+            
+            // Mostrar overlay
+            if (edit_overlay) {
+                edit_overlay.hidden = false;
+                edit_overlay.style.display = 'block';
+                console.log("Overlay mostrado.");
+            }
+            
+            // Mostrar formulário
+            edit_div.hidden = false;
+            edit_div.style.display = 'block';
+            edit_div.style.visibility = 'visible';
+            edit_div.style.opacity = '1';
+            edit_div.style.position = 'fixed';
+            edit_div.style.top = '50%';
+            edit_div.style.left = '50%';
+            edit_div.style.transform = 'translate(-50%, -50%)';
+            edit_div.style.zIndex = '9999';
+            edit_div.style.backgroundColor = 'white';
+            edit_div.style.border = '2px solid #333';
+            edit_div.style.padding = '20px';
+            edit_div.style.margin = '0';
+            edit_div.style.width = '600px';
+            edit_div.style.maxHeight = '80vh';
+            edit_div.style.overflowY = 'auto';
+            edit_div.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)';
+            edit_div.style.borderRadius = '8px';
+            
+            console.log('Formulário de edição mostrado');
+            
+            // Preencher campos
+            const editedEmailField = document.getElementById("edited-email");
+            const editNameField = document.getElementById("edit-name");
+            const editEmailField = document.getElementById("edit-email");
+            const editPasswordField = document.getElementById("edit-password");
+            const editInfoField = document.getElementById("edit-info");
+            
+            if (editedEmailField) editedEmailField.value = email;
+            if (editNameField) editNameField.value = name;
+            if (editEmailField) editEmailField.value = email;
+            if (editPasswordField) editPasswordField.value = password;
+            if (editInfoField) editInfoField.textContent = `Editando usuário: ${email}`;
+            
+            // Configurar checkbox de admin
+            const adminCheckbox = document.getElementById("edit-is-admin");
+            if (adminCheckbox) {
+                adminCheckbox.checked = isAdmin;
+            }
+            
+            // Configurar checkboxes de setores
+            const routeCheckboxes = document.querySelectorAll('.edit-route-checkbox');
+            
+            if (authorizedRoutes && authorizedRoutes !== '[]') {
+                try {
+                    const routes = JSON.parse(authorizedRoutes);
+                    
+                    routeCheckboxes.forEach(checkbox => {
+                        const routeName = checkbox.value;
+                        checkbox.checked = routes.includes(routeName);
+                    });
+                } catch (e) {
+                    console.error('Erro ao parsear setores autorizados:', e);
+                }
+            } else {
+                routeCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            }
+            
+            console.log('Função show_edit_div concluída com sucesso');
+        }
+
+        function selectAllRoutes() {
+            document.querySelectorAll('input[name="authorized_routes"]:not(.edit-route-checkbox)').forEach(checkbox => {
+                if (!checkbox.disabled) {  // Não alterar checkboxes desabilitados
+                    checkbox.checked = true;
+                }
+            });
+        }
+
+        function deselectAllRoutes() {
+            document.querySelectorAll('input[name="authorized_routes"]:not(.edit-route-checkbox)').forEach(checkbox => {
+                if (!checkbox.disabled) {  // Não alterar checkboxes desabilitados (como "Comum")
+                    checkbox.checked = false;
+                }
+            });
+        }
+
+        function selectAllEditRoutes() {
+            document.querySelectorAll('.edit-route-checkbox').forEach(checkbox => {
+                if (!checkbox.disabled) {  // Não alterar checkboxes desabilitados
+                    checkbox.checked = true;
+                }
+            });
+        }
+
+        function deselectAllEditRoutes() {
+            document.querySelectorAll('.edit-route-checkbox').forEach(checkbox => {
+                if (!checkbox.disabled) {  // Não alterar checkboxes desabilitados (como "Comum")
+                    checkbox.checked = false;
+                }
+            });
+        }
+
+        function toggleRoutesList(elementId) {
+            const routesList = document.getElementById(elementId);
+            if (routesList.style.display === 'none') {
+                routesList.style.display = 'block';
+            } else {
+                routesList.style.display = 'none';
+            }
+        }
+
+        function hideEditDiv() {
+            console.log("Função hideEditDiv chamada - escondendo formulário e overlay");
+            
+            const edit_div = document.getElementById("edit-div");
+            const edit_overlay = document.getElementById("edit-overlay");
+            
+            if (edit_div) {
+                edit_div.hidden = true;
+                edit_div.style.display = 'none';
+                console.log("Formulário escondido");
+            }
+            
+            if (edit_overlay) {
+                edit_overlay.hidden = true;
+                edit_overlay.style.display = 'none';
+                console.log("Overlay escondido");
+            }
+        }
+
+        document.querySelectorAll('#sidebar a').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault(); // Impede que o link redirecione a página
+
+                const nomePagina = this.getAttribute('data-page');
+                const url = this.getAttribute('href');
+                console.log(nomePagina)
+
+                document.getElementById('location-info').textContent = 'Você está em: ' + nomePagina;
+                document.getElementById('content-frame').src = url;
+            });
+        });
+    </script>
+</div>
+</body>
+</html>

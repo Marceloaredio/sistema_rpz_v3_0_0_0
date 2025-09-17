@@ -1,0 +1,578 @@
+<!-- Modal do Relatório de Fechamento -->
+<div id="fechamentoModal" class="modal" style="display: block;">
+    <div class="modal-content">
+        <!-- Header compacto com nome e período -->
+        <div class="modal-header">
+            <div class="header-info">
+                <h3>Relatório de Fechamento de Ponto</h3>
+                <h4>{{ motorist_name }}</h4>
+                <p>Período: {{ from_date }} a {{ to_date }}</p>
+            </div>
+            <span class="close" onclick="fecharModal()">&times;</span>
+        </div>
+        
+        <!-- Seção de Totais Compacta -->
+        {% if jornada_data %}
+        <div class="totais-compact">
+            <div class="totais-row">
+                <div class="total-card">
+                    <span class="total-label">INTERVALO</span>
+                    <span class="total-value">{{ totais.intervalo }}</span>
+                </div>
+                <div class="total-card">
+                    <span class="total-label">ALMOÇO</span>
+                    <span class="total-value">{{ totais.almoco }}</span>
+                </div>
+                <div class="total-card">
+                    <span class="total-label">H. TRAB.</span>
+                    <span class="total-value">{{ totais.h_trab }}</span>
+                </div>
+                <div class="total-card">
+                    <span class="total-label">CARGA</span>
+                    <span class="total-value">{{ totais.carga_horaria }}</span>
+                </div>
+                <div class="total-card highlight">
+                    <span class="total-label">H.EXTRA50%</span>
+                    <span class="total-value">{{ totais.h_extra50 }}</span>
+                </div>
+                <div class="total-card">
+                    <span class="total-label">H.EXTRA100%</span>
+                    <span class="total-value">{{ totais.h_extra100 }}</span>
+                </div>
+                <div class="total-card highlight">
+                    <span class="total-label">H.E. NOT.</span>
+                    <span class="total-value">{{ totais.h_e_not }}</span>
+                </div>
+                <div class="total-card highlight">
+                    <span class="total-label">AD.NOT</span>
+                    <span class="total-value">{{ totais.ad_not }}</span>
+                </div>
+                <div class="total-card">
+                    <span class="total-label">DIÁRIA</span>
+                    <span class="total-value">{{ totais.diaria }}</span>
+                </div>
+                <div class="total-card">
+                    <span class="total-label">AJ. ALIMENT.</span>
+                    <span class="total-value">{{ totais.aj_aliment }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Container da tabela com cabeçalho fixo -->
+        <div class="table-wrapper">
+            <table class="report-table">
+                <thead class="sticky-header">
+                    <tr>
+                        <th>PLACA</th>
+                        <th>DATA</th>
+                        <th>DIA</th>
+                        <th>INÍCIO</th>
+                        <th>ALMOÇO</th>
+                        <th>FIM</th>
+                        <th>INTERVALO</th>
+                        <th>ALMOÇO</th>
+                        <th>H. TRAB.</th>
+                        <th>CARGA</th>
+                        <th>H.EXTRA50%</th>
+                        <th>H.EXTRA100%</th>
+                        <th>H.E. NOT.</th>
+                        <th>AD. NOT</th>
+                        <th>DIÁRIA</th>
+                        <th>AJ. ALIMENT.</th>
+                        <th>OBS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in jornada_data %}
+                    <tr>
+                        <td>{{ row.placa }}</td>
+                        <td>{{ row.data }}</td>
+                        <td>{{ row.dia_semana }}</td>
+                        <td>{{ row.inicio_jornada }}</td>
+                        <td>{{ row.almoco_inicio }}, {{ row.almoco_fim }}</td>
+                        <td>{{ row.fim_jornada }}</td>
+                        <td>{{ row.intervalo }}</td>
+                        <td>{{ row.almoco }}</td>
+                        <td>{{ row.h_trab }}</td>
+                        <td>{{ row.carga_horaria }}</td>
+                        <td class="highlight-cell">{{ row.h_extra50 }}</td>
+                        <td>{{ row.h_extra100 }}</td>
+                        <td class="highlight-cell">{{ row.h_e_not }}</td>
+                        <td class="highlight-cell">{{ row.ad_not }}</td>
+                        <td>{{ row.diaria }}</td>
+                        <td>{{ row.aj_aliment }}</td>
+                        <td>{{ row.observacao or '' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="no-data">
+            <p>Nenhum dado encontrado para o período selecionado.</p>
+        </div>
+        {% endif %}
+        
+        <!-- Footer compacto -->
+        <div class="modal-footer">
+            <button onclick="baixarExcelFechamento()" class="btn-download">
+                <i class="fas fa-file-excel"></i> Excel
+            </button>
+                         <button onclick="baixarPDFFechamento('{{ motorist_id }}', '{{ from_date }}', '{{ to_date }}')" class="btn-download">
+                 <i class="fas fa-file-pdf"></i> PDF
+             </button>
+            <button onclick="fecharModal()" class="btn-close">
+                <i class="fas fa-times"></i> Fechar
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    z-index: 99999; /* Z-index muito alto para sobrepor tudo */
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    width: 100vw; /* Full width */
+    height: 100vh; /* Full height */
+    border-radius: 0; /* Sem bordas arredondadas */
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px 8px 0 0;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 60px;
+}
+
+.header-info h3 {
+    margin: 0 0 5px 0;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.header-info h4 {
+    margin: 0 0 3px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.header-info p {
+    margin: 0;
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.close {
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+    padding: 5px;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.close:hover {
+    background-color: rgba(255,255,255,0.2);
+}
+
+/* Seção de totais compacta */
+.totais-compact {
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.totais-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.total-card {
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 6px 10px;
+    text-align: center;
+    min-width: 80px;
+    flex: 1;
+    max-width: 120px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.total-card.highlight {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    border-color: #ffc107;
+    box-shadow: 0 2px 6px rgba(255, 193, 7, 0.3);
+}
+
+.total-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 2px;
+    line-height: 1.2;
+}
+
+.total-value {
+    display: block;
+    font-size: 12px;
+    font-weight: bold;
+    color: #007bff;
+    line-height: 1.2;
+}
+
+.total-card.highlight .total-value {
+    color: #856404;
+}
+
+/* Container da tabela */
+.table-wrapper {
+    flex: 1;
+    overflow: auto; /* Permitir scroll horizontal e vertical */
+    display: flex;
+    flex-direction: column;
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5px; /* Fonte aumentada em 0.5px */
+    flex: 1;
+    table-layout: fixed; /* Largura fixa para colunas */
+}
+
+.report-table th,
+.report-table td {
+    border: 1px solid #ddd;
+    padding: 2px 3px; /* Padding menor */
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+    font-size: 9.5px; /* Fonte aumentada em 0.5px para células */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Larguras específicas para cada coluna */
+.report-table th:nth-child(1), .report-table td:nth-child(1) { width: 8%; } /* PLACA */
+.report-table th:nth-child(2), .report-table td:nth-child(2) { width: 7%; } /* DATA */
+.report-table th:nth-child(3), .report-table td:nth-child(3) { width: 5%; } /* DIA */
+.report-table th:nth-child(4), .report-table td:nth-child(4) { width: 6%; } /* INÍCIO */
+.report-table th:nth-child(5), .report-table td:nth-child(5) { width: 10%; } /* ALMOÇO */
+.report-table th:nth-child(6), .report-table td:nth-child(6) { width: 6%; } /* FIM */
+.report-table th:nth-child(7), .report-table td:nth-child(7) { width: 7%; } /* INTERVALO */
+.report-table th:nth-child(8), .report-table td:nth-child(8) { width: 7%; } /* ALMOÇO */
+.report-table th:nth-child(9), .report-table td:nth-child(9) { width: 7%; } /* H. TRAB. */
+.report-table th:nth-child(10), .report-table td:nth-child(10) { width: 6%; } /* CARGA */
+.report-table th:nth-child(11), .report-table td:nth-child(11) { width: 8%; } /* H.EXTRA50% */
+.report-table th:nth-child(12), .report-table td:nth-child(12) { width: 8%; } /* H.EXTRA100% */
+.report-table th:nth-child(13), .report-table td:nth-child(13) { width: 7%; } /* H.E. NOT. */
+.report-table th:nth-child(14), .report-table td:nth-child(14) { width: 7%; } /* AD. NOT */
+.report-table th:nth-child(15), .report-table td:nth-child(15) { width: 8%; } /* DIÁRIA */
+.report-table th:nth-child(16), .report-table td:nth-child(16) { width: 8%; } /* AJ. ALIMENT. */
+.report-table th:nth-child(17), .report-table td:nth-child(17) { width: 6%; } /* OBS */
+
+.sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: #f8f9fa;
+}
+
+.report-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    font-size: 8.5px; /* Fonte aumentada em 0.5px para cabeçalhos */
+    padding: 4px 2px; /* Padding menor */
+}
+
+.report-table tbody {
+    overflow-y: auto;
+}
+
+.report-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.report-table tbody tr:hover {
+    background-color: #e9ecef;
+}
+
+.highlight-cell {
+    background-color: #fff3cd !important;
+    font-weight: 600;
+    color: #856404;
+}
+
+.report-table tbody tr:hover .highlight-cell {
+    background-color: #ffeaa7 !important;
+}
+
+/* Footer compacto */
+.modal-footer {
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    border-radius: 0 0 8px 8px;
+    text-align: right;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-download {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-download:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-close {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-close:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.no-data {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsividade */
+@media (min-width: 1920px) {
+    /* Telas muito grandes (4K, etc.) */
+    .modal-content {
+        width: 100vw;
+        height: 100vh;
+    }
+    
+    .totais-row {
+        gap: 12px;
+        justify-content: center;
+    }
+    
+    .total-card {
+        min-width: 120px;
+        max-width: 150px;
+        padding: 10px 15px;
+    }
+    
+    .total-label {
+        font-size: 12px;
+    }
+    
+    .total-value {
+        font-size: 14px;
+    }
+    
+    .report-table {
+        font-size: 10.5px; /* Fonte aumentada em 0.5px */
+    }
+    
+    .report-table th,
+    .report-table td {
+        padding: 4px 6px;
+        font-size: 10.5px;
+    }
+    
+    /* Ajustar larguras para telas grandes */
+    .report-table th:nth-child(1), .report-table td:nth-child(1) { width: 7%; } /* PLACA */
+    .report-table th:nth-child(2), .report-table td:nth-child(2) { width: 6%; } /* DATA */
+    .report-table th:nth-child(3), .report-table td:nth-child(3) { width: 4%; } /* DIA */
+    .report-table th:nth-child(4), .report-table td:nth-child(4) { width: 5%; } /* INÍCIO */
+    .report-table th:nth-child(5), .report-table td:nth-child(5) { width: 9%; } /* ALMOÇO */
+    .report-table th:nth-child(6), .report-table td:nth-child(6) { width: 5%; } /* FIM */
+    .report-table th:nth-child(7), .report-table td:nth-child(7) { width: 6%; } /* INTERVALO */
+    .report-table th:nth-child(8), .report-table td:nth-child(8) { width: 6%; } /* ALMOÇO */
+    .report-table th:nth-child(9), .report-table td:nth-child(9) { width: 6%; } /* H. TRAB. */
+    .report-table th:nth-child(10), .report-table td:nth-child(10) { width: 5%; } /* CARGA */
+    .report-table th:nth-child(11), .report-table td:nth-child(11) { width: 7%; } /* H.EXTRA50% */
+    .report-table th:nth-child(12), .report-table td:nth-child(12) { width: 7%; } /* H.EXTRA100% */
+    .report-table th:nth-child(13), .report-table td:nth-child(13) { width: 6%; } /* H.E. NOT. */
+    .report-table th:nth-child(14), .report-table td:nth-child(14) { width: 6%; } /* AD. NOT */
+    .report-table th:nth-child(15), .report-table td:nth-child(15) { width: 7%; } /* DIÁRIA */
+    .report-table th:nth-child(16), .report-table td:nth-child(16) { width: 7%; } /* AJ. ALIMENT. */
+    .report-table th:nth-child(17), .report-table td:nth-child(17) { width: 5%; } /* OBS */
+    
+    .header-info h3 {
+        font-size: 24px;
+    }
+    
+    .header-info h4 {
+        font-size: 20px;
+    }
+    
+    .header-info p {
+        font-size: 14px;
+    }
+}
+
+@media (min-width: 1440px) and (max-width: 1919px) {
+    /* Telas grandes (Full HD, etc.) */
+    .modal-content {
+        width: 100vw;
+        height: 100vh;
+    }
+    
+    .totais-row {
+        gap: 10px;
+    }
+    
+    .total-card {
+        min-width: 100px;
+        max-width: 130px;
+        padding: 8px 12px;
+    }
+    
+    .total-label {
+        font-size: 11px;
+    }
+    
+    .total-value {
+        font-size: 13px;
+    }
+    
+    .report-table {
+        font-size: 9.5px; /* Fonte aumentada em 0.5px */
+    }
+    
+    .report-table th,
+    .report-table td {
+        padding: 3px 4px;
+        font-size: 9.5px;
+    }
+    
+    /* Ajustar larguras para telas médias */
+    .report-table th:nth-child(1), .report-table td:nth-child(1) { width: 8%; } /* PLACA */
+    .report-table th:nth-child(2), .report-table td:nth-child(2) { width: 7%; } /* DATA */
+    .report-table th:nth-child(3), .report-table td:nth-child(3) { width: 5%; } /* DIA */
+    .report-table th:nth-child(4), .report-table td:nth-child(4) { width: 6%; } /* INÍCIO */
+    .report-table th:nth-child(5), .report-table td:nth-child(5) { width: 10%; } /* ALMOÇO */
+    .report-table th:nth-child(6), .report-table td:nth-child(6) { width: 6%; } /* FIM */
+    .report-table th:nth-child(7), .report-table td:nth-child(7) { width: 7%; } /* INTERVALO */
+    .report-table th:nth-child(8), .report-table td:nth-child(8) { width: 7%; } /* ALMOÇO */
+    .report-table th:nth-child(9), .report-table td:nth-child(9) { width: 7%; } /* H. TRAB. */
+    .report-table th:nth-child(10), .report-table td:nth-child(10) { width: 6%; } /* CARGA */
+    .report-table th:nth-child(11), .report-table td:nth-child(11) { width: 8%; } /* H.EXTRA50% */
+    .report-table th:nth-child(12), .report-table td:nth-child(12) { width: 8%; } /* H.EXTRA100% */
+    .report-table th:nth-child(13), .report-table td:nth-child(13) { width: 7%; } /* H.E. NOT. */
+    .report-table th:nth-child(14), .report-table td:nth-child(14) { width: 7%; } /* AD. NOT */
+    .report-table th:nth-child(15), .report-table td:nth-child(15) { width: 8%; } /* DIÁRIA */
+    .report-table th:nth-child(16), .report-table td:nth-child(16) { width: 8%; } /* AJ. ALIMENT. */
+    .report-table th:nth-child(17), .report-table td:nth-child(17) { width: 6%; } /* OBS */
+}
+
+@media (max-width: 1200px) {
+    .totais-row {
+        gap: 4px;
+    }
+    
+    .total-card {
+        min-width: 70px;
+        padding: 4px 6px;
+    }
+    
+    .total-label {
+        font-size: 9px;
+    }
+    
+    .total-value {
+        font-size: 11px;
+    }
+    
+    .report-table {
+        font-size: 8.5px; /* Fonte aumentada em 0.5px */
+    }
+    
+    .report-table th,
+    .report-table td {
+        font-size: 8.5px;
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+    }
+    
+    .report-table {
+        font-size: 7.5px; /* Fonte aumentada em 0.5px */
+    }
+    
+    .report-table th,
+    .report-table td {
+        padding: 1px 2px;
+        font-size: 7.5px;
+    }
+    
+    .totais-row {
+        gap: 2px;
+    }
+    
+    .total-card {
+        min-width: 60px;
+        padding: 3px 4px;
+    }
+}
+</style>
+
+<!-- Funções JavaScript já definidas no arquivo principal --> 

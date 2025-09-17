@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Pesquisa de Motoristas e Veículos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}"/>
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+
+    <!-- Inclui o componente de progresso -->
+    {% include 'partials/progress_bar.html' %}
+
+    <!-- Inclui o componente de autocomplete -->
+    {% include 'partials/autocomplete.html' %}
+</head>
+<body>
+<div class="content">
+    <h2>Download de Jornada</h2>
+
+    <p class="info-text">
+        Para gerar a tabela de jornada, selecione um <b>motorista</b> e defina o período de
+        pesquisa. A tabela gerada será um arquivo Excel com informações sobre as jornadas filtradas.
+    </p>
+
+    <!-- Flash de erro -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-message">
+        <ul>
+            {% for category, message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Formulário -->
+    <div class="form-container">
+        <form id="report-form" autocomplete="off">
+            <div class="form-grupo">
+                <label for="motorist_search">Motorista:</label>
+                <input type="hidden" name="motorist_id" id="motorist_id">
+                <input type="text" id="motorist_search" class="form-control" placeholder="Digite o nome do motorista">
+            </div>
+
+            <div class="form-group">
+                <label for="data_inicio">Período: de </label>
+                <input type="date" name="from_date" id="data_inicio" class="form-control" required/>
+                <label for="data_fim"> até </label>
+                <input type="date" name="to_date" id="data_fim" class="form-control" required/>
+            </div>
+
+            <div id="validation-message" class="validation-message" style="display:none;"></div>
+
+            <button type="submit">Visualizar</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal (será preenchido dinamicamente) -->
+<div id="resultado-container"></div>
+
+<script>
+    // Preparar dados para o autocomplete
+    const motoristas = [
+        {% for motorist in motorists %}
+        {
+            value: "{{ motorist[0] }}",
+            label: "{{ motorist[1] }}"
+        },
+        {% endfor %}
+    ];
+
+    // Inicializar o componente de autocomplete
+    document.addEventListener('DOMContentLoaded', function() {
+        const autocompleteMotorista = initAutocomplete('motorist_search', {
+            data: motoristas,
+            placeholder: 'Digite o nome do motorista...',
+            onSelect: function(item) {
+                document.getElementById('motorist_id').value = item.value;
+            }
+        });
+    });
+
+    function fecharModal() {
+        const modal = document.getElementById('jornadaModal');
+        if (modal) modal.remove();
+    }
+
+    function baixarExcel() {
+        const tabela = document.querySelector("#jornadaModal table");
+        const linhas = tabela.querySelectorAll("tbody tr");
+        const dadosTabela = [];
+
+        progressManager.startOperation('Gerando Excel', 'Preparando dados...');
+
+        // Captura os dados da tabela
+        linhas.forEach(linha => {
+            const celulas = linha.querySelectorAll("td");
+            const linhaDados = [];
+            celulas.forEach(td => linhaDados.push(td.innerText.trim()));
+            dadosTabela.push(linhaDados);
+        });
+
+        // Captura os totais da tela
+        const totais = {
+            refeicao: document.getElementById("soma-refeicao").innerText.trim(),
+            intersticio: document.getElementById("soma-intersticio").innerText.trim(),
+            intervalo: document.getElementById("soma-intervalo").innerText.trim(),
+            carga: document.getElementById("soma-carga").innerText.trim(),
+            jornada: document.getElementById("soma-jornada").innerText.trim(),
+            direcao: document.getElementById("soma-direcao").innerText.trim(),
+            sem_pausa: document.getElementById("soma-sem-pausa").innerText.trim(),
+            infracoes: document.getElementById("soma-infracoes").innerText.trim(),
+        };
+
+        // Captura nome e datas
+        const nome = document.querySelector("#jornadaModal h4").innerText.trim();
+        const periodo = document.querySelector("#jornadaModal h3").innerText.trim();
+        const match = periodo.match(/(\d{2}\/\d{2}\/\d{4}) a (\d{2}\/\d{2}\/\d{4})/);
+
+        if (!match) {
+            progressManager.finishOperation(() => {
+                alert("Período não encontrado no título do modal!");
+            });
+            return;
+        }
+
+        const [, inicio, fim] = match;
+
+        const payload = {
+            nome_motorista: nome,
+            data_inicio: inicio,
+            data_fim: fim,
+            totais: totais,
+            tabela: dadosTabela
+        };
+
+        progressManager.updateProgress(30, 'Enviando dados para o servidor...');
+
+        // Envia para o backend com fetch (POST)
+        fetch("/api/export_excel", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        })
+        .then(response => {
+            progressManager.updateProgress(60, 'Gerando arquivo Excel...');
+            if (response.ok) {
+                return response.blob();
+            } else {
+                throw new Error("Erro ao gerar o Excel");
+            }
+        })
+        .then(blob => {
+            progressManager.updateProgress(90, 'Preparando download...');
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `jornada_motorista_${nome.replace(/\s+/g, '_')}_${inicio.replace(/\//g, '-')}_a_${fim.replace(/\//g, '-')}.xlsx`;
+            document.body.appendChild(a);
+            
+            progressManager.finishOperation(() => {
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            });
+        })
+        .catch(error => {
+            progressManager.finishOperation(() => {
+                alert("Erro ao baixar Excel: " + error.message);
+            });
+        });
+    }
+
+    function baixarPDF() {
+        const tabela = document.querySelector("#jornadaModal table");
+        const linhas = tabela.querySelectorAll("tbody tr");
+        const dadosTabela = [];
+
+        progressManager.startOperation('Gerando PDF', 'Preparando dados...');
+
+        // Captura os dados da tabela
+        linhas.forEach(linha => {
+            const celulas = linha.querySelectorAll("td");
+            const linhaDados = [];
+            celulas.forEach(td => linhaDados.push(td.innerText.trim()));
+            dadosTabela.push(linhaDados);
+        });
+
+        // Captura os totais da tela
+        const totais = {
+            refeicao: document.getElementById("soma-refeicao").innerText.trim(),
+            intersticio: document.getElementById("soma-intersticio").innerText.trim(),
+            intervalo: document.getElementById("soma-intervalo").innerText.trim(),
+            carga: document.getElementById("soma-carga").innerText.trim(),
+            jornada: document.getElementById("soma-jornada").innerText.trim(),
+            direcao: document.getElementById("soma-direcao").innerText.trim(),
+            sem_pausa: document.getElementById("soma-sem-pausa").innerText.trim(),
+            infracoes: document.getElementById("soma-infracoes").innerText.trim(),
+        };
+
+        // Captura nome e datas
+        const nome = document.querySelector("#jornadaModal h4").innerText.trim();
+        const periodo = document.querySelector("#jornadaModal h3").innerText.trim();
+        const match = periodo.match(/(\d{2}\/\d{2}\/\d{4}) a (\d{2}\/\d{2}\/\d{4})/);
+
+        if (!match) {
+            progressManager.finishOperation(() => {
+                alert("Período não encontrado no título do modal!");
+            });
+            return;
+        }
+
+        const [, inicio, fim] = match;
+
+        const payload = {
+            nome_motorista: nome,
+            data_inicio: inicio,
+            data_fim: fim,
+            totais: totais,
+            tabela: dadosTabela
+        };
+
+        progressManager.updateProgress(30, 'Enviando dados para o servidor...');
+
+        // Envia para o backend com fetch (POST)
+        fetch("/api/export_pdf", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        })
+        .then(response => {
+            progressManager.updateProgress(60, 'Gerando arquivo PDF...');
+            if (response.ok) {
+                return response.blob();
+            } else {
+                throw new Error("Erro ao gerar o PDF");
+            }
+        })
+        .then(blob => {
+            progressManager.updateProgress(90, 'Preparando download...');
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `jornada_motorista_${nome.replace(/\s+/g, '_')}_${inicio.replace(/\//g, '-')}_a_${fim.replace(/\//g, '-')}.pdf`;
+            document.body.appendChild(a);
+            
+            progressManager.finishOperation(() => {
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            });
+        })
+        .catch(error => {
+            progressManager.finishOperation(() => {
+                alert("Erro ao baixar PDF: " + error.message);
+            });
+        });
+    }
+
+    function somarTemposDaTabela() {
+        const tabela = document.querySelector('#jornadaModal table tbody');
+        if (!tabela) return;
+
+        // Índices das colunas (ajuste se a ordem mudar)
+        const COLUNAS = {
+            refeicao: 7,
+            intersticio: 8,
+            intervalo: 9,
+            carga: 10,
+            jornada: 11,
+            direcao: 12,
+            semPausa: 13,
+            infracoes: 14
+        };
+
+        // Inicializa somas de tempo (em minutos)
+        let total = {
+            refeicao: 0,
+            intersticio: 0,
+            intervalo: 0,
+            carga: 0,
+            jornada: 0,
+            direcao: 0,
+            semPausa: 0,
+            infracoes: 0
+        };
+
+        for (const linha of tabela.rows) {
+            total.refeicao += converterTempoParaMinutos(linha.cells[COLUNAS.refeicao]?.innerText);
+            total.intersticio += converterTempoParaMinutos(linha.cells[COLUNAS.intersticio]?.innerText);
+            total.intervalo += converterTempoParaMinutos(linha.cells[COLUNAS.intervalo]?.innerText);
+            total.carga += converterTempoParaMinutos(linha.cells[COLUNAS.carga]?.innerText);
+            total.jornada += converterTempoParaMinutos(linha.cells[COLUNAS.jornada]?.innerText);
+            total.direcao += converterTempoParaMinutos(linha.cells[COLUNAS.direcao]?.innerText);
+            total.semPausa += converterTempoParaMinutos(linha.cells[COLUNAS.semPausa]?.innerText);
+            if (linha.cells[COLUNAS.infracoes]) {
+                const textoInfracoes = linha.cells[COLUNAS.infracoes].innerText.trim();
+                if (textoInfracoes !== "") {
+                    const partes = textoInfracoes.split('|').map(function(x) { return x.trim(); }).filter(function(x) { return x.length > 0; });
+                    total.infracoes += partes.length;
+                }
+            }
+        }
+
+        // Atualiza os campos de total
+        document.getElementById('soma-refeicao').textContent = formatarMinutos(total.refeicao);
+        document.getElementById('soma-intersticio').textContent = formatarMinutos(total.intersticio);
+        document.getElementById('soma-intervalo').textContent = formatarMinutos(total.intervalo);
+        document.getElementById('soma-carga').textContent = formatarMinutos(total.carga);
+        document.getElementById('soma-jornada').textContent = formatarMinutos(total.jornada);
+        document.getElementById('soma-direcao').textContent = formatarMinutos(total.direcao);
+        document.getElementById('soma-sem-pausa').textContent = formatarMinutos(total.semPausa);
+        document.getElementById('soma-infracoes').textContent = total.infracoes;
+    }
+
+    function converterTempoParaMinutos(valor) {
+        if (!valor) return 0;
+        const partes = valor.trim().split(':');
+        if (partes.length !== 2) return 0;
+        const horas = parseInt(partes[0], 10);
+        const minutos = parseInt(partes[1], 10);
+        return (isNaN(horas) || isNaN(minutos)) ? 0 : horas * 60 + minutos;
+    }
+
+    function formatarMinutos(minutos) {
+        const h = Math.floor(minutos / 60);
+        const m = minutos % 60;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    }
+
+
+    async function carregarModalJornada(query) {
+        const response = await fetch(`/api/get-report?${query}`);
+        const html = await response.text();
+
+        // Remove modal anterior
+        const antigo = document.getElementById('jornadaModal');
+        if (antigo) antigo.remove();
+
+        const container = document.getElementById('resultado-container');
+        container.innerHTML = html;
+
+        // Mostra o modal
+        const novoModal = document.getElementById('jornadaModal');
+        novoModal.style.display = 'block';
+
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+
+    document.getElementById('report-form').addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const motoristId = document.getElementById('motorist_id').value;
+        const fromDate = document.getElementById('data_inicio').value;
+        const toDate = document.getElementById('data_fim').value;
+        const validationMessage = document.getElementById('validation-message');
+
+        validationMessage.style.display = 'none';
+        validationMessage.innerHTML = '';
+
+        let errors = [];
+
+        if (!motoristId) errors.push("Selecione um motorista.");
+
+        if (fromDate && toDate) {
+            const start = new Date(fromDate);
+            const end = new Date(toDate);
+            const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+
+            if (diffDays > 31) errors.push("O período máximo permitido é de 31 dias.");
+        } else {
+            errors.push("Datas são obrigatórias.");
+        }
+
+        if (errors.length > 0) {
+            validationMessage.innerHTML = `<p>${errors.join('<br>')}</p>`;
+            validationMessage.style.display = 'block';
+            return;
+        }
+
+        const query = new URLSearchParams({
+            motorist_id: motoristId,
+            from_date: fromDate,
+            to_date: toDate
+        }).toString();
+
+        await carregarModalJornada(query);  // espera carregar modal no DOM
+        somarTemposDaTabela();              // agora funciona corretamente
+    });
+</script>
+</body>
+</html>

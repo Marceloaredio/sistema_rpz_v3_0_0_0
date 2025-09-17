@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Infração</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f7fafc;
+            margin: 0;
+            padding: 0;
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .report-details {
+            margin: 20px;
+        }
+
+        .report-details p {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .report-details strong {
+            font-weight: 500;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+
+        thead th {
+            background-color: #2C3E50;
+            color: #FFFFFF;
+            padding: 4px 6px;
+            font-weight: bold;
+            white-space: pre-line;
+            font-size: 11px;
+            min-width: 80px;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        td {
+            background-color: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            color: #333;
+        }
+
+        tr:nth-child(odd) td {
+            background-color: #ffffff;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #f9fafb;
+        }
+
+        tr.has_infraction td {
+            background-color: #bb8990;
+        }
+
+        tr.has_infraction:hover td {
+            background-color: #c26a78;
+        }
+
+        tr:hover td {
+            background-color: #e5e7eb;
+        }
+
+        .tabela-wrapper {
+            overflow-x: auto;
+            display: block;
+            margin-top: 20px;
+        }
+
+        .tabela-wrapper table {
+            min-width: 950px;
+            width: 100%;
+        }
+
+        .tabela-wrapper th, .tabela-wrapper td {
+            white-space: nowrap;
+        }
+
+        .col-oculta {
+            display: none;
+        }
+
+        #toggle-button {
+            background-color: #2C3E50;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        #toggle-button:hover {
+            background-color: #34495e;
+        }
+
+        #justification-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #link-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        #link-input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #link-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-save, .btn-edit, .btn-open {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-save {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-edit {
+            background-color: #2196F3;
+            color: white;
+        }
+        .btn-open {
+            background-color: #607D8B;
+            color: white;
+        }
+        .btn-save:hover, .btn-edit:hover, .btn-open:hover {
+            opacity: 0.9;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="content">
+    <div class="report-details">
+        <h2>Relatório de Infração</h2>
+        <p><strong>Dia:</strong> {{ data_dict.data }}</p>
+        <p><strong>Motorista:</strong> {{ data_dict.nome }}</p>
+        <p><strong>Horário da infração:</strong> {{ data_dict.hora }}</p>
+        <p><strong>Motivo:</strong> {{ data_dict.desc_infracao }}</p>
+        <p><strong>Duração:</strong> {{ data_dict.duration }}</p>
+        {% if data_dict.link_justification %}
+        <p><strong>Link da justification:</strong> <a href="{{ data_dict.link_justification }}" target="_blank" class="btn-link">{{ data_dict.link_justification }}</a></p>
+        {% endif %}
+
+        <div id="justification-section" style="margin-top: 20px;">
+            <h3>justification da Infração</h3>
+            {% if data_dict.link_justification %}
+                <div id="link-buttons">
+                    <button onclick="editarLink()" class="btn-edit">Editar Link</button>
+                    <a href="{{ data_dict.link_justification }}" target="_blank" class="btn-open">Abrir justification</a>
+                </div>
+            {% else %}
+                <div id="link-form">
+                    <input type="text" id="link-input" placeholder="Cole o link do Google Drive aqui" style="width: 300px;">
+                    <button onclick="salvarLink()" class="btn-save">Salvar Link</button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="tabela-wrapper">
+        <h3 style="text-align:center;">Registro do dia da infração</h3>
+
+        <table id="tabela-confirmacao" class="tabela-jornada">
+            <thead>
+            <tr>
+                <th>Placa</th>
+                <th>Data</th>
+                <th>Dia da Semana</th>
+                <th>Início Jornada</th>
+                <th>In. Refeição</th>
+                <th>Fim Refeição</th>
+                <th>Fim de Jornada</th>
+                <th>Observação</th>
+                <th>Tempo Refeição</th>
+                <th>Interstício</th>
+                <th>Tempo Intervalo</th>
+                <th>Tempo Carga/Descarga</th>
+                <th>Jornada Total</th>
+                <th>Tempo Direção</th>
+                <th>Direção sem Pausa</th>
+                <th class="col-oculta">In. Descanso 1</th>
+                <th class="col-oculta">Fim Descanso 1</th>
+                <th class="col-oculta">In. Descanso 2</th>
+                <th class="col-oculta" style="display: none;">Fim Descanso 2</th>
+                <th class="col-oculta" style="display: none;">In. Descanso 3</th>
+                <th class="col-oculta" style="display: none;">Fim Descanso 3</th>
+                <th class="col-oculta" style="display: none;">In. Descanso 4</th>
+                <th class="col-oculta" style="display: none;">Fim Descanso 4</th>
+                <th class="col-oculta" style="display: none;">In. Descanso 5</th>
+                <th class="col-oculta" style="display: none;">Fim Descanso 5</th>
+                <th class="col-oculta" style="display: none;">In. Descanso 6</th>
+                <th class="col-oculta" style="display: none;">Fim Descanso 6</th>
+                <th class="col-oculta" style="display: none;">In. Descanso 7</th>
+                <th class="col-oculta" style="display: none;">Fim Descanso 7</th>
+                <th class="col-oculta" style="display: none;">In. Descanso 8</th>
+                <th class="col-oculta" style="display: none;">Fim Descanso 8</th>
+                <th class="col-oculta" style="display: none;">In. Car/Desc 1</th>
+                <th class="col-oculta" style="display: none;">Fim Car/Desc 1</th>
+                <th class="col-oculta" style="display: none;">In. Car/Desc 2</th>
+                <th class="col-oculta" style="display: none;">Fim Car/Desc 2</th>
+                <th class="col-oculta" style="display: none;">In. Car/Desc 3</th>
+                <th class="col-oculta" style="display: none;">Fim Car/Desc 3</th>
+                <th class="col-oculta" style="display: none;">In. Car/Desc 4</th>
+                <th class="col-oculta" style="display: none;">Fim Car/Desc 4</th>
+                <th class="col-oculta" style="display: none;">In. Car/Desc 5</th>
+                <th class="col-oculta" style="display: none;">Fim Car/Desc 5</th>
+                <th class="col-oculta" style="display: none;">In. Car/Desc 6</th>
+                <th class="col-oculta" style="display: none;">Fim Car/Desc 6</th>
+                <th class="col-oculta" style="display: none;">In. Car/Desc 7</th>
+                <th class="col-oculta" style="display: none;">Fim Car/Desc 7</th>
+                <!-- Adicione mais colunas conforme necessário -->
+                <th>
+                    <button id="toggle-button">➕</button>
+                </th> <!-- Botão para exibir as colunas ocultas -->
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>{{ data_dict['placa'] }}</td>
+                <td>{{ data_dict['data'] }}</td>
+                <td>{{ data_dict['dia_da_semana'] }}</td>
+                <td>{{ data_dict['inicio_jornada'] }}</td>
+                <td>{{ data_dict['in_refeicao'] }}</td>
+                <td>{{ data_dict['fim_refeicao'] }}</td>
+                <td>{{ data_dict['fim_jornada'] }}</td>
+                <td>{{ data_dict['observacao'] }}</td>
+                <td>{{ data_dict['tempo_refeicao'] }}</td>
+                <td>{{ data_dict['intersticio'] }}</td>
+                <td>{{ data_dict['tempo_intervalo'] }}</td>
+                <td>{{ data_dict['tempo_carga_descarga'] }}</td>
+                <td>{{ data_dict['jornada_total'] }}</td>
+                <td>{{ data_dict['tempo_direcao'] }}</td>
+                <td>{{ data_dict['direcao_sem_pausa'] }}</td>
+                <td class="col-oculta">{{ data_dict['in_descanso_1'] }}</td>
+                <td class="col-oculta">{{ data_dict['fim_descanso_1'] }}</td>
+                <td class="col-oculta">{{ data_dict['in_descanso_2'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_descanso_2'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_descanso_3'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_descanso_3'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_descanso_4'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_descanso_4'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_descanso_5'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_descanso_5'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_descanso_6'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_descanso_6'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_descanso_7'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_descanso_7'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_descanso_8'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_descanso_8'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_car_desc_1'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_car_desc_1'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_car_desc_2'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_car_desc_2'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_car_desc_3'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_car_desc_3'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_car_desc_4'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_car_desc_4'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_car_desc_5'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_car_desc_5'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_car_desc_6'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_car_desc_6'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['in_car_desc_7'] }}</td>
+                <td class="col-oculta" style="display: none;">{{ data_dict['fim_car_desc_7'] }}</td>
+                <!-- Adicione mais colunas conforme necessário -->
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('toggle-button').addEventListener('click', function () {
+                var hiddenColumns = document.querySelectorAll('.col-oculta');
+                hiddenColumns.forEach(function (column) {
+                    column.style.display = column.style.display === 'none' ? 'table-cell' : 'none';
+                });
+                // Mudar o ícone de mais para menos
+                this.textContent = this.textContent === '➕' ? '➖' : '➕';
+            });
+        });
+
+        function salvarLink() {
+            const link = document.getElementById('link-input').value;
+            if (!link) {
+                alert('Por favor, insira um link válido.');
+                return;
+            }
+
+            fetch('/update_link_justification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `hash={{ request.args.get('hash') }}&link=${encodeURIComponent(link)}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Erro ao salvar o link.');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao salvar o link.');
+            });
+        }
+
+        function editarLink() {
+            const justificationSection = document.getElementById('justification-section');
+            const currentLink = '{{ data_dict.link_justification }}';
+            
+            justificationSection.innerHTML = `
+                <h3>justification da Infração</h3>
+                <div id="link-form">
+                    <input type="text" id="link-input" value="${currentLink}" style="width: 300px;">
+                    <button onclick="salvarLink()" class="btn-save">Salvar Link</button>
+                </div>
+            `;
+        }
+    </script>
+</div>
+</body>
+</html>

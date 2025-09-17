@@ -1,0 +1,2996 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RPZ - Conferir Atualização</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared_tables.css') }}" />
+    
+    <!-- CSS para conflitos -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/conflict_modal.css') }}" />
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    
+    <!-- SweetAlert2 para notificações -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Inclui o componente de autocomplete -->
+    {% include 'partials/autocomplete.html' %}
+
+    <!-- Inclui o componente de progresso -->
+    {% include 'partials/progress_bar.html' %}
+    <script src="{{ url_for('static', filename='js/progress.js') }}"></script>
+    
+    <!-- Inclui o componente de conflitos -->
+    <script src="{{ url_for('static', filename='js/conflict-utils.js') }}"></script>
+
+    <style>
+      /* Estilos para o header fixo */
+      .fixed-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: white;
+        padding: 15px 0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+      }
+
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      .header-title {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn-header-action {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+      }
+
+      .btn-header-action:hover {
+        background: rgba(255,255,255,0.2);
+        transform: translateY(-1px);
+      }
+
+      .status-hover {
+        cursor: pointer;
+        position: relative;
+        transition: all 0.3s ease;
+      }
+      
+      .status-hover:hover {
+        background-color: rgba(52, 73, 94, 0.1);
+        border-radius: 4px;
+      }
+      
+      .status-modal {
+        position: fixed;
+        background: #ffffff;
+        color: #2c3e50;
+        padding: 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 10000;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        display: none;
+        max-width: 400px;
+        min-width: 320px;
+        border: 1px solid #e1e8ed;
+        animation: modalSlideIn 0.3s ease-out;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      
+      @keyframes modalSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-15px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      
+      .status-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #ecf0f1;
+      }
+      
+      .status-modal-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+      }
+      
+      .status-modal-close {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        font-weight: bold;
+      }
+      
+      .status-modal-close:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+        color: #495057;
+      }
+      
+      .status-modal-content {
+        line-height: 1.6;
+        word-wrap: break-word;
+        white-space: normal;
+        color: #495057;
+      }
+      
+      .status-modal.completo {
+        border-left: 4px solid #28a745;
+      }
+      
+      .status-modal.completo .status-modal-title::before {
+        content: '✓ ';
+        margin-right: 8px;
+        color: #28a745;
+        font-weight: bold;
+      }
+      
+      .status-modal.faltante {
+        border-left: 4px solid #ffc107;
+      }
+      
+      .status-modal.faltante .status-modal-title::before {
+        content: '⚠ ';
+        margin-right: 8px;
+        color: #ffc107;
+        font-weight: bold;
+      }
+      
+      .status-modal.pendente {
+        border-left: 4px solid #ff9800;
+      }
+      
+      .status-modal.pendente .status-modal-title::before {
+        content: '⏳ ';
+        margin-right: 8px;
+        color: #ff9800;
+        font-weight: bold;
+      }
+      
+      .status-modal.sem-registros {
+        border-left: 4px solid #dc3545;
+      }
+      
+      .status-modal.sem-registros .status-modal-title::before {
+        content: '✗ ';
+        margin-right: 8px;
+        color: #dc3545;
+        font-weight: bold;
+      }
+      
+      .dates-list {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 15px;
+        border: 1px solid #e9ecef;
+      }
+      
+      .dates-list strong {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #495057;
+        font-weight: 600;
+      }
+      
+      .dates-list .dates {
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        color: #6c757d;
+        background: #ffffff;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+      }
+      
+      .status-info {
+        background: #e3f2fd;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        border-left: 4px solid #2196f3;
+        color: #1565c0;
+      }
+      
+      /* Estilos para a coluna Ações */
+      .acoes {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      .btn-detalhes, .btn-download {
+        background: none;
+        border: none;
+        padding: 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+      
+      .btn-detalhes {
+        color: #007bff;
+      }
+      
+      .btn-download {
+        color: #28a745;
+      }
+      
+      .btn-detalhes:hover, .btn-download:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+      }
+      
+      /* Hover effects com tooltip */
+      .btn-detalhes:hover::after {
+        content: "Visualizar Detalhes";
+        position: absolute;
+        background: #333;
+        color: white;
+        padding: 5px 8px;
+        border-radius: 3px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 1000;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 5px;
+      }
+      
+      .btn-download:hover::after {
+        content: "Download";
+        position: absolute;
+        background: #333;
+        color: white;
+        padding: 5px 8px;
+        border-radius: 3px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 1000;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 5px;
+      }
+      
+      /* Estilos para o modal de download */
+      .download-modal {
+        display: none;
+        position: fixed;
+        z-index: 9998;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+      
+              .download-modal-content {
+          background-color: #fefefe;
+          margin: 5% auto;
+          padding: 0;
+          border-radius: 8px;
+          width: 90%;
+          max-width: 450px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+      
+              .download-modal-header {
+          padding: 20px;
+          border-bottom: 1px solid #e9ecef;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+          border-radius: 8px 8px 0 0;
+        }
+      
+              .download-modal-header h3 {
+          margin: 0;
+          color: white;
+          font-size: 18px;
+        }
+      
+              .download-modal-header .download-close {
+          color: #fff;
+          font-size: 28px;
+          font-weight: bold;
+          cursor: pointer;
+          line-height: 1;
+          opacity: 0.8;
+        }
+        
+        .download-modal-header .download-close:hover {
+          color: #fff;
+          opacity: 1;
+        }
+      
+              .download-modal-body {
+          padding: 20px 25px;
+        }
+      
+              .form-grupo {
+          margin-bottom: 20px;
+        }
+      
+      .form-grupo label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 14px;
+      }
+      
+              .form-control {
+          width: 100%;
+          padding: 8px 10px;
+          border: 2px solid #e1e5e9;
+          border-radius: 6px;
+          font-size: 14px;
+          transition: all 0.3s ease;
+        }
+      
+              .form-control:focus {
+          outline: none;
+          border-color: #007bff;
+          box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+        
+        /* Estilos específicos para inputs de data e formato */
+        .form-control[type="date"] {
+          width: 120px;
+          padding: 6px 8px;
+          font-size: 13px;
+        }
+        
+        .form-control[name="download_format"] {
+          width: 180px;
+          padding: 8px 10px;
+          font-size: 14px;
+        }
+        
+        /* Layout para campos de data lado a lado */
+        .date-range-group {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        
+        .date-range-group .form-grupo {
+          margin-bottom: 0;
+          flex: 1;
+        }
+        
+        .date-range-group label {
+          margin-bottom: 5px;
+          font-size: 13px;
+        }
+      
+              .form-actions {
+          display: flex;
+          gap: 15px;
+          justify-content: center;
+          margin-top: 25px;
+          padding-top: 20px;
+          border-top: 1px solid #e9ecef;
+        }
+      
+              .btn-download-submit {
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          font-size: 13px;
+          font-weight: 600;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+      
+      .btn-download-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+      }
+      
+              .btn-cancel {
+          background: #6c757d;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          font-size: 13px;
+          font-weight: 600;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+      
+      .btn-cancel:hover {
+        background: #5a6268;
+        transform: translateY(-1px);
+      }
+
+      /* Ajuste para o conteúdo principal com header fixo */
+      .content {
+        margin-top: 5px; /* Reduzir ainda mais o espaço entre filtro e tabela */
+        padding: 20px;
+      }
+
+      /* Estilos para o container de análise */
+      .analysis-container {
+        margin-top: 80px; /* Espaço para o header fixo */
+        padding: 20px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+      }
+
+      /* Estilos para a seção de filtros */
+      .filter-section {
+        margin: 30px 20px 15px 20px; /* Aumentar margem superior, reduzir inferior */
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+
+      .filter-content {
+        padding: 20px; /* Restaurar padding uniforme para melhor respiro */
+      }
+
+      .filter-header h3 {
+        margin: 0 0 15px 0; /* Restaurar margem inferior para melhor separação */
+        color: #2c3e50;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .filter-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 20px; /* Restaurar gap para melhor equilíbrio */
+      }
+
+      .filter-group {
+        flex: 1;
+      }
+
+      .filter-group label {
+        display: block;
+        margin-bottom: 8px; /* Restaurar margem inferior para melhor respiro */
+        font-weight: 600;
+        color: #495057;
+        font-size: 14px;
+      }
+
+      .filter-input {
+        width: 100%;
+        max-width: 300px;
+      }
+
+      .btn-filter-clear {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+      }
+
+      .btn-filter-clear:hover {
+        background: #5a6268;
+        transform: translateY(-1px);
+      }
+
+      .analysis-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      }
+
+      .analysis-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
+      }
+
+      .analysis-header h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 22px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .btn-close-analysis {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-close-analysis:hover {
+        background: #5a6268;
+        transform: scale(1.05);
+      }
+
+      .form-row {
+        display: flex;
+        gap: 30px;
+        margin-bottom: 25px;
+        align-items: flex-start;
+      }
+
+      .form-row .form-grupo {
+        flex: 1;
+        margin-bottom: 0;
+        min-width: 0;
+      }
+
+      .form-actions {
+        text-align: center;
+        padding-top: 20px;
+        border-top: 1px solid #e9ecef;
+      }
+
+      /* Estilos para os campos de entrada */
+      .form-grupo {
+        margin-bottom: 25px;
+      }
+
+      .form-grupo label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+        box-sizing: border-box;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        background-color: white;
+      }
+
+      /* Ajustes específicos para o layout dos campos */
+      .form-row .form-grupo {
+        min-width: 0; /* Evita overflow */
+      }
+
+      .form-row .form-grupo .form-control {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      /* Estilos para o botão de análise */
+      .btn-analise-fechamento {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 20px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .btn-analise-fechamento:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+      }
+
+      .btn-analise-fechamento:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn-analise-fechamento i {
+        font-size: 18px;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+      }
+
+      /* Estilos para o Modal de Inserir Dados */
+      .insert-data-modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s ease-out;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      .insert-data-modal-content {
+        background-color: #fefefe;
+        margin: 2% auto;
+        padding: 0;
+        border-radius: 12px;
+        width: 95%;
+        max-width: 700px;
+        max-height: 90vh;
+        overflow: hidden; /* Remover scroll do container principal */
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s ease-out;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-30px) scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      
+      .insert-data-modal-header {
+        padding: 25px 30px 20px 30px;
+        border-bottom: 2px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px 12px 0 0;
+        color: white;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        flex-shrink: 0; /* Não permitir que o header encolha */
+      }
+      
+      .insert-data-modal-header h3 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .insert-data-modal-header .insert-data-close {
+        color: #fff;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 1;
+        opacity: 0.8;
+        transition: opacity 0.3s ease;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 15; /* Maior que o header */
+      }
+      
+      .insert-data-modal-header .insert-data-close:hover {
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.2);
+      }
+      
+      .insert-data-modal-body {
+        padding: 30px;
+        background: #ffffff;
+        flex: 1; /* Ocupar o espaço restante */
+        overflow-y: auto; /* Scroll apenas no corpo */
+        max-height: calc(90vh - 100px); /* Altura máxima considerando o header */
+      }
+      
+      .insert-data-modal .form-container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      
+      .insert-data-modal .form-grupo {
+        margin-bottom: 20px;
+      }
+      
+      .insert-data-modal .form-grupo label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .insert-data-modal .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+        box-sizing: border-box;
+      }
+      
+      .insert-data-modal .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        background-color: white;
+      }
+      
+      .insert-data-modal .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .insert-data-modal .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      }
+      
+      .insert-data-modal .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      }
+      
+      .insert-data-modal .btn-primary:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+      
+      .insert-data-modal .btn-secondary {
+        background: #6c757d;
+        color: white;
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+      }
+      
+      .insert-data-modal .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+      }
+      
+
+
+      /* Media queries para responsividade */
+      @media (max-width: 768px) {
+        .form-row {
+          flex-direction: column;
+          gap: 20px;
+        }
+        
+        .form-row .form-grupo {
+          flex: none;
+          width: 100%;
+        }
+        
+        .analysis-content {
+          padding: 20px;
+        }
+        
+        .header-content {
+          flex-direction: column;
+          gap: 15px;
+          text-align: center;
+        }
+        
+        .analysis-container {
+          margin-top: 120px;
+          padding: 15px;
+        }
+        
+        .filter-controls {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 15px;
+        }
+        
+        .filter-input {
+          max-width: 100%;
+        }
+        
+        /* Responsividade para o Modal de Inserir Dados */
+        .insert-data-modal-content {
+          width: 98%;
+          margin: 1% auto;
+          max-height: 95vh;
+        }
+        
+        .insert-data-modal-header {
+          padding: 20px 20px 15px 20px;
+        }
+        
+        .insert-data-modal-header h3 {
+          font-size: 18px;
+        }
+        
+        .insert-data-modal-body {
+          padding: 20px;
+          max-height: calc(95vh - 80px); /* Ajustar para mobile */
+        }
+        
+        .insert-data-modal .form-grupo {
+          margin-bottom: 15px;
+        }
+        
+        .insert-data-modal .form-control {
+          padding: 10px 12px;
+          font-size: 16px; /* Melhor para mobile */
+        }
+        
+        .insert-data-modal .btn {
+          width: 100%;
+          padding: 15px 20px;
+          font-size: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header fixo compacto -->
+    <div class="fixed-header">
+      <div class="header-content">
+        <h1 class="header-title">
+          <i class="fas fa-chart-line"></i>
+          Painel de Controle - Fechamento de Ponto
+        </h1>
+        <div class="header-actions">
+          <button class="btn-header-action" onclick="toggleAnalysisPanel()">
+            <i class="fas fa-cogs"></i>
+            Análise de Ponto
+          </button>
+          <button class="btn-header-action" onclick="toggleInsertDataModal()">
+            <i class="fas fa-plus"></i>
+            Inserir Dados
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Container de Análise -->
+    <div class="analysis-container" id="analysisPanel" style="display: none;">
+      <div class="analysis-content">
+        <div class="analysis-header">
+          <h2><i class="fas fa-search"></i> Análise de Ponto</h2>
+          <button class="btn-close-analysis" onclick="toggleAnalysisPanel()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <form method="GET" action="/closure_analysis" onsubmit="return mostrarProgresso()" id="jornadaForm" autocomplete="off">
+          <div class="form-row">
+            <div class="form-grupo">
+              <label for="truck_search">PLACA</label>
+              <input type="hidden" name="truck_id" id="truck_id">
+              <input type="text" id="truck_search" class="form-control" required autocomplete="off">
+            </div>
+            
+            <div class="form-grupo">
+              <label for="motorist_search">MOTORISTA</label>
+              <input type="hidden" name="motorist_id" id="motorist_id">
+              <input type="text" id="motorist_search" class="form-control" required autocomplete="off">
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" class="btn-analise-fechamento">
+              <i class="fas fa-chart-line"></i> Iniciar Análise de Ponto
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Seção de Filtros -->
+    <div class="filter-section" style="margin-top: 80px;">
+      <div class="filter-content">
+        <div class="filter-controls">
+          <div class="filter-group">
+            <label for="filter_motorist">Filtrar por Motorista:</label>
+            <input type="text" id="filter_motorist" class="form-control filter-input" placeholder="Digite para filtrar...">
+          </div>
+          
+          <div class="filter-actions">
+            <button class="btn-filter-clear" onclick="clearFilter()">
+              <i class="fas fa-times"></i> Limpar Filtro
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <h2 class="mb-4">Relatórios</h2>
+
+      <table class="shared-table">
+        <thead>
+          <tr>
+            <th>Motorista</th>
+            <th>Data da Última Atualização</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for motorist in motorists %}
+          <tr data-motorist-id="{{ motorist.id }}">
+            <td>{{ motorist.name }}</td>
+            <td class="last-update-date">Carregando...</td>
+            <td class="status status-hover" data-obs="">Carregando...</td>
+            <td class="acoes">
+              <button class="btn-detalhes" title="Visualizar Detalhes">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="btn-download" title="Download">
+                <i class="fas fa-download"></i>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Inclui o modal de detalhes do motorista -->
+    {% include 'partials/motorist_details_modal_fechamento.html' %}
+    
+    <!-- Modal de Download -->
+    <div id="downloadModal" class="download-modal" style="display: none;">
+        <div class="download-modal-content">
+            <div class="download-modal-header">
+                <h3>Download de Relatório</h3>
+                <span class="download-close" onclick="closeDownloadModal()">&times;</span>
+            </div>
+            
+            <div class="download-modal-body">
+                <form id="download-form" autocomplete="off">
+                    <div class="form-grupo">
+                        <label for="download_motorist_search">Motorista:</label>
+                        <input type="hidden" name="download_motorist_id" id="download_motorist_id">
+                        <input type="text" id="download_motorist_search" class="form-control" placeholder="Digite o nome do motorista" required>
+                    </div>
+                    
+                    <div class="date-range-group">
+                        <div class="form-grupo">
+                            <label for="download_data_inicio">Período: de </label>
+                            <input type="date" name="download_from_date" id="download_data_inicio" class="form-control" required/>
+                        </div>
+                        
+                        <div class="form-grupo">
+                            <label for="download_data_fim"> até </label>
+                            <input type="date" name="download_to_date" id="download_data_fim" class="form-control" required/>
+                        </div>
+                    </div>
+                    
+                    <div class="form-grupo" style="margin-top: 10px;">
+                        <label for="download_format">Formato:</label>
+                        <select name="download_format" id="download_format" class="form-control" required>
+                            <option value="">Selecione o formato</option>
+                            <option value="excel">Excel (.xlsx)</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn-download-submit">
+                            <i class="fas fa-download"></i> Gerar Download
+                        </button>
+                        <button type="button" class="btn-cancel" onclick="closeDownloadModal()">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Inserir Dados -->
+    <div id="insertDataModal" class="insert-data-modal" style="display: none;">
+        <div class="insert-data-modal-content">
+            <div class="insert-data-modal-header">
+                <h3><i class="fas fa-plus"></i> Inserir Dados do Ponto</h3>
+                <span class="insert-data-close" onclick="closeInsertDataModal()">&times;</span>
+            </div>
+            <div class="insert-data-modal-body">
+                <div class="form-container">
+                    <form id="modal-form-dayoff" action="{{ url_for('fechamento.save_dayoff') }}" method="POST" autocomplete="off">
+                        <div class="form-grupo">
+                            <label for="modal_motorist_search">MOTORISTA</label>
+                            <input type="hidden" name="motorist_id" id="modal_motorist_id">
+                            <input type="text" id="modal_motorist_search" class="form-control" required>
+                        </div>
+
+                        <div class="form-grupo">
+                            <label for="modal_start_date">PERÍODO (Data de Início)</label>
+                            <input type="date" name="start_date" id="modal_start_date" class="form-control" required />
+                        </div>
+
+                        <div class="form-grupo">
+                            <label for="modal_end_date">ATÉ (Data de Fim)</label>
+                            <input type="date" name="end_date" id="modal_end_date" class="form-control" required />
+                        </div>
+
+                        <div class="form-grupo">
+                            <label for="modal_motivo">MOTIVO</label>
+                            <select name="motivo" id="modal_motivo" class="form-control" required>
+                                <option value="">Selecione o motivo</option>
+                                {% for criterio in criterias %}
+                                    <option value="{{ criterio.valor_filtro }}">{{ criterio.valor_filtro }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Campos específicos para GARAGEM e CARGA/DESCARGA -->
+                        <div id="modal_garagem-fields" style="display: none;">
+                            <div class="form-grupo">
+                                <label for="modal_placa_veiculo">PLACA DO VEÍCULO (Opcional)</label>
+                                <input type="hidden" name="truck_id" id="modal_truck_id">
+                                <input type="text" id="modal_placa_veiculo" class="form-control" placeholder="Digite a placa do veículo..." />
+                            </div>
+                            
+                            <div class="form-grupo">
+                                <label for="modal_inicio_jornada">INÍCIO DE JORNADA</label>
+                                <input type="time" name="inicio_jornada" id="modal_inicio_jornada" class="form-control" />
+                            </div>
+                            
+                            <div class="form-grupo">
+                                <label for="modal_fim_jornada">FIM DE JORNADA</label>
+                                <input type="time" name="fim_jornada" id="modal_fim_jornada" class="form-control" />
+                            </div>
+                            
+                            <div class="form-grupo">
+                                <label for="modal_inicio_refeicao">INÍCIO DE REFEIÇÃO (Opcional)</label>
+                                <input type="time" name="inicio_refeicao" id="modal_inicio_refeicao" class="form-control" />
+                            </div>
+                            
+                            <div class="form-grupo">
+                                <label for="modal_fim_refeicao">FIM DE REFEIÇÃO (Opcional)</label>
+                                <input type="time" name="fim_refeicao" id="modal_fim_refeicao" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 20px; display: flex; gap: 15px; justify-content: center;">
+                            <button type="button" class="btn btn-secondary" onclick="window.limparModalInserirDados()" style="background: #6c757d;">
+                                <i class="fas fa-eraser"></i> Limpar
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="modal-btn-save">
+                                <span class="spinner" style="display:none; margin-right: 6px;"></span>
+                                <span class="btn-text">Salvar</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== DADOS JINJA2 EM ATRIBUTOS HTML ===== -->
+    <div id="jinja2-data" 
+         data-motorists='[
+           {% for motorist in motorists %}
+           {"value": "{{ motorist.id }}", "label": "{{ motorist.name }}"}
+           {% if not loop.last %},{% endif %}
+           {% endfor %}
+         ]'
+         data-trucks='[
+           {% for truck in trucks %}
+           {"value": "{{ truck[0] }}", "label": "{{ truck[1] }}"}
+           {% if not loop.last %},{% endif %}
+           {% endfor %}
+         ]'
+         data-criterias='[
+           {% for criterio in criterias %}
+           {"valor_filtro": "{{ criterio.valor_filtro }}", "carga_horaria_especial": "{{ criterio.carga_horaria_especial }}", "valor_diaria": "{{ criterio.valor_diaria }}", "valor_ajuda_alimentacao": "{{ criterio.valor_ajuda_alimentacao }}"}
+           {% if not loop.last %},{% endif %}
+           {% endfor %}
+         ]'
+         style="display: none;">
+    </div>
+
+    <script>
+      // Verificar se SweetAlert2 está carregado
+      if (typeof Swal === 'undefined') {
+        console.log('🔄 SweetAlert2 não encontrado, carregando...');
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = function() {
+          console.log('✅ SweetAlert2 carregado com sucesso');
+        };
+        script.onerror = function() {
+          console.error('❌ Falha ao carregar SweetAlert2');
+        };
+        document.head.appendChild(script);
+      } else {
+        console.log('✅ SweetAlert2 já está disponível');
+      }
+      
+      // Função para alternar o painel de análise
+      function toggleAnalysisPanel() {
+        const panel = document.getElementById('analysisPanel');
+        const isVisible = panel.style.display !== 'none';
+        
+        if (isVisible) {
+          panel.style.display = 'none';
+          // Ajustar margem da tabela
+          document.querySelector('.content').style.marginTop = '80px';
+        } else {
+          panel.style.display = 'block';
+          // Ajustar margem da tabela
+          document.querySelector('.content').style.marginTop = '20px';
+        }
+      }
+
+      // Função para alternar o modal de inserir dados
+      window.toggleInsertDataModal = function() {
+        const modal = document.getElementById('insertDataModal');
+        const isVisible = modal.style.display !== 'none';
+        
+        if (isVisible) {
+          window.closeInsertDataModal();
+        } else {
+          window.openInsertDataModal();
+        }
+      }
+
+      // Função para abrir o modal de inserir dados
+      window.openInsertDataModal = function() {
+        const modal = document.getElementById('insertDataModal');
+        modal.style.display = 'block';
+        
+        // Aguardar o modal estar visível antes de inicializar autocomplete
+        setTimeout(() => {
+          console.log('🔄 Modal aberto, inicializando autocomplete...');
+          
+          // Inicializar autocomplete quando o modal abrir
+          if (typeof initAutocomplete === 'function') {
+            console.log('✅ Função initAutocomplete encontrada, executando...');
+            window.initializeModalAutocomplete();
+          } else {
+            console.error('❌ Função initAutocomplete não encontrada');
+          }
+          
+          // Configurar event listener para campos condicionais será feito na função initializeModalAutocomplete
+          
+          // Verificar se os elementos existem no modal
+          console.log('🔄 Verificando elementos do modal após abertura:');
+          console.log('  - Modal motivo:', $('#modal_motivo').length);
+          console.log('  - Modal garagem-fields:', $('#modal_garagem-fields').length);
+          console.log('  - Modal inicio_jornada:', $('#modal_inicio_jornada').length);
+          console.log('  - Modal fim_jornada:', $('#modal_fim_jornada').length);
+          
+          // Verificar se o modal está visível
+          const modal = document.getElementById('insertDataModal');
+          console.log('🔄 Modal visível:', modal.style.display !== 'none');
+          console.log('🔄 Modal display:', modal.style.display);
+          
+          // Focar no primeiro campo quando o modal abrir
+          const firstInput = modal.querySelector('input');
+          if (firstInput) {
+            firstInput.focus();
+          }
+        }, 100);
+        
+        // Prevenir scroll do body
+        document.body.style.overflow = 'hidden';
+      }
+
+      // Função para fechar o modal de inserir dados
+      window.closeInsertDataModal = function() {
+        const modal = document.getElementById('insertDataModal');
+        modal.style.display = 'none';
+        
+        // Restaurar scroll do body
+        document.body.style.overflow = '';
+        
+        // Limpar formulário se existir
+        const form = modal.querySelector('form');
+        if (form) {
+          form.reset();
+        }
+        
+        // Limpar campos específicos
+        $("#modal_motorist_id").val('');
+        $("#modal_truck_id").val('');
+        $("#modal_placa_veiculo").val('');
+        $("#modal_inicio_jornada").val('');
+        $("#modal_fim_jornada").val('');
+        $("#modal_inicio_refeicao").val('');
+        $("#modal_fim_refeicao").val('');
+        
+        // Ocultar campos condicionais
+        $("#modal_garagem-fields").hide();
+        
+        console.log('✅ Modal fechado e limpo');
+      }
+
+      // ===== FUNÇÕES DE CÁLCULO GLOBAIS =====
+      
+      // Função para converter tempo HH:MM para minutos (versão global)
+      window.tempoParaMinutos = function(tempo) {
+        if (!tempo) return 0;
+        const [horas, minutos] = tempo.split(':').map(Number);
+        return horas * 60 + minutos;
+      }
+      
+      // Função para converter tempo HH:MM para minutos (versão do modal - não sobrescrever)
+      if (!window.tempoParaMinutosModal) {
+        window.tempoParaMinutosModal = function(tempoStr) {
+          if (!tempoStr || tempoStr === '' || tempoStr === '00:00') return 0;
+          const isNegative = tempoStr.startsWith('-');
+          const cleanTime = isNegative ? tempoStr.substring(1) : tempoStr;
+          const [horas, minutos] = cleanTime.split(':').map(Number);
+          if (isNaN(horas) || isNaN(minutos)) return 0;
+          const totalMinutos = horas * 60 + minutos;
+          return isNegative ? -totalMinutos : totalMinutos;
+        };
+      }
+      
+      // Função para converter minutos para tempo HH:MM (versão global)
+      window.minutosParaTempo = function(minutos) {
+        if (!minutos || minutos < 0) return '00:00';
+        const horas = Math.floor(minutos / 60);
+        const mins = minutos % 60;
+        return `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+      }
+      
+      // Função para converter minutos para tempo HH:MM (versão do modal - não sobrescrever)
+      if (!window.minutosParaTempoModal) {
+        window.minutosParaTempoModal = function(minutos) {
+          if (minutos === 0) return '00:00';
+          const isNegative = minutos < 0;
+          const minutosAbs = Math.abs(minutos);
+          const horas = Math.floor(minutosAbs / 60);
+          const mins = minutosAbs % 60;
+          const formato = `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+          return isNegative ? `-${formato}` : formato;
+        };
+      }
+      
+      // Função para calcular tempo entre dois horários
+      window.calcularTempo = function(inicio, fim) {
+        if (!inicio || !fim) return 0;
+        const inicioMin = window.tempoParaMinutos(inicio);
+        const fimMin = window.tempoParaMinutos(fim);
+        let diff = fimMin - inicioMin;
+        if (diff < 0) diff += 24 * 60; // Ajuste para virada de dia
+        return Math.max(0, diff);
+      }
+      
+      // Função para calcular jornada total (descontando refeição)
+      window.calcularJornadaTotal = function(inicioJornada, fimJornada, inicioRefeicao, fimRefeicao) {
+        const jornadaBruta = window.calcularTempo(inicioJornada, fimJornada);
+        const tempoRefeicao = window.calcularTempo(inicioRefeicao, fimRefeicao);
+        return Math.max(0, jornadaBruta - tempoRefeicao);
+      }
+      
+      // Função para calcular carga horária (padrão ou especial)
+      window.calcularCargaHoraria = function(motivo) {
+        console.log('🔄 Calculando carga horária para motivo:', motivo);
+        
+        // Verificar se existe carga horária especial configurada
+        if (window.criterios && Array.isArray(window.criterios)) {
+          const criterio = window.criterios.find(c => c.valor_filtro === motivo);
+          console.log('🔄 Critério encontrado:', criterio);
+          
+          if (criterio && criterio.carga_horaria_especial && criterio.carga_horaria_especial !== 'Padrão') {
+            console.log('🔄 Carga horária especial:', criterio.carga_horaria_especial);
+            
+            try {
+              // Verificar se o formato é válido (HH:MM)
+              if (typeof criterio.carga_horaria_especial === 'string' && criterio.carga_horaria_especial.includes(':')) {
+                const [horas, minutos] = criterio.carga_horaria_especial.split(':').map(Number);
+                
+                // Validar se os valores são números válidos
+                if (!isNaN(horas) && !isNaN(minutos) && horas >= 0 && minutos >= 0 && minutos < 60) {
+                  const totalMinutos = horas * 60 + minutos;
+                  console.log('✅ Carga horária calculada:', totalMinutos, 'minutos');
+                  return totalMinutos;
+                } else {
+                  console.warn('⚠️ Valores inválidos na carga horária especial:', { horas, minutos });
+                }
+              } else {
+                console.warn('⚠️ Formato inválido de carga horária especial:', criterio.carga_horaria_especial);
+              }
+            } catch (error) {
+              console.error('❌ Erro ao processar carga horária especial:', error);
+            }
+          } else {
+            console.log('🔄 Usando carga horária padrão (8h)');
+          }
+        } else {
+          console.log('🔄 Critérios não disponíveis, usando padrão');
+        }
+        
+        // Valor padrão: 8 horas (480 minutos)
+        console.log('✅ Retornando carga horária padrão: 480 minutos');
+        return 480;
+      }
+      
+      // Função para calcular hora extra 50%
+      window.calcularHoraExtra50 = function(jornadaTotal, cargaHoraria) {
+        return Math.max(0, jornadaTotal - cargaHoraria);
+      }
+      
+      // Função para calcular hora extra noturna (simplificado)
+      window.calcularHENoturno = function(inicioJornada, fimJornada) {
+        // Período noturno: 22:00 às 05:00 (7 horas = 420 minutos)
+        const inicioNoturno = 22 * 60; // 22:00 em minutos
+        const fimNoturno = 5 * 60;     // 05:00 em minutos
+        
+        const inicioMin = window.tempoParaMinutos(inicioJornada);
+        const fimMin = window.tempoParaMinutos(fimJornada);
+        
+        let tempoNoturno = 0;
+        
+        // Se a jornada cruza a meia-noite
+        if (fimMin < inicioMin) {
+          // Antes da meia-noite (22:00 - 23:59)
+          if (inicioMin <= 23 * 60 + 59) {
+            tempoNoturno += Math.min(23 * 60 + 59 - inicioMin, 120);
+          }
+          // Depois da meia-noite (00:00 - 05:00)
+          if (fimMin >= 0) {
+            tempoNoturno += Math.min(fimMin, 300);
+          }
+        } else {
+          // Jornada normal no mesmo dia
+          if (inicioMin <= fimNoturno) {
+            // Começa antes das 05:00
+            tempoNoturno += Math.min(fimMin, fimNoturno) - inicioMin;
+          } else if (inicioMin <= 23 * 60 + 59 && fimMin >= inicioNoturno) {
+            // Termina depois das 22:00
+            tempoNoturno += Math.min(fimMin, 23 * 60 + 59) - Math.max(inicioMin, inicioNoturno);
+          }
+        }
+        
+        return Math.max(0, tempoNoturno);
+      }
+
+      // Função para calcular todos os valores antes de enviar
+      window.calcularValoresAntesDeEnviar = function(dados) {
+        console.log('🔄 Calculando valores para envio:', dados);
+        const resultado = { ...dados };
+        
+        // Se for GARAGEM ou CARGA/DESCARGA, calcular os valores
+        const motivo = dados.motivo?.toUpperCase();
+        console.log('🔄 Motivo analisado:', motivo);
+        
+        if (motivo && (motivo.includes("GARAGEM") || motivo.includes("CARGA/DESCARGA"))) {
+          console.log('✅ Motivo requer cálculos especiais');
+          
+          // 🆕 CALCULAR VALORES MONETÁRIOS BASEADOS NOS CRITÉRIOS
+          let dailyValue = 0.0;
+          let foodValue = 0.0;
+          
+          // Buscar valores nos critérios configurados
+          if (window.criterios && Array.isArray(window.criterios)) {
+            const criterio = window.criterios.find(c => c.valor_filtro === dados.motivo);
+            console.log('🔄 Critério encontrado para valores monetários:', criterio);
+            
+            if (criterio) {
+              dailyValue = parseFloat(criterio.valor_diaria || 0);
+              foodValue = parseFloat(criterio.valor_ajuda_alimentacao || 0);
+              console.log('✅ Valores monetários do critério:', { dailyValue, foodValue });
+            } else {
+              console.warn('⚠️ Critério não encontrado, usando valores padrão');
+              // Valores padrão baseados no que vimos no banco
+              if (motivo.includes("GARAGEM")) {
+                dailyValue = 0.0;
+                foodValue = 30.0;
+              } else if (motivo.includes("CARGA/DESCARGA")) {
+                dailyValue = 90.0;
+                foodValue = 0.0;
+              }
+            }
+          } else {
+            console.warn('⚠️ Critérios não disponíveis, usando valores padrão');
+            // Valores padrão baseados no que vimos no banco
+            if (motivo.includes("GARAGEM")) {
+              dailyValue = 0.0;
+              foodValue = 30.0;
+            } else if (motivo.includes("CARGA/DESCARGA")) {
+              dailyValue = 90.0;
+              foodValue = 0.0;
+            }
+          }
+          
+          // Adicionar valores monetários ao resultado
+          resultado.daily_value = dailyValue;
+          resultado.food_value = foodValue;
+          
+          if (dados.inicio_jornada && dados.fim_jornada) {
+            try {
+              // Calcular jornada total (descontando refeição)
+              const jornadaTotal = window.calcularJornadaTotal(
+                dados.inicio_jornada, 
+                dados.fim_jornada, 
+                dados.inicio_refeicao, 
+                dados.fim_refeicao
+              );
+              
+              // Calcular carga horária (padrão ou especial)
+              const cargaHoraria = window.calcularCargaHoraria(dados.motivo);
+              
+              // Calcular hora extra 50%
+              const horaExtra50 = window.calcularHoraExtra50(jornadaTotal, cargaHoraria);
+              
+              // Calcular hora extra noturna
+              const heNoturno = window.calcularHENoturno(dados.inicio_jornada, dados.fim_jornada);
+              
+              // Adicionar os valores calculados ao resultado
+              resultado.jornada_total = window.minutosParaTempo(jornadaTotal);
+              resultado.carga_horaria = window.minutosParaTempo(cargaHoraria);
+              resultado.hora_extra_50 = window.minutosParaTempo(horaExtra50);
+              resultado.he_noturno = window.minutosParaTempo(heNoturno);
+              resultado.adicional_noturno = window.minutosParaTempo(heNoturno);
+              
+              // Calcular tempo de refeição (pode ser 0 se não informado)
+              const tempoRefeicao = dados.inicio_refeicao && dados.fim_refeicao ? 
+                window.calcularTempo(dados.inicio_refeicao, dados.fim_refeicao) : 0;
+              resultado.tempo_refeicao = window.minutosParaTempo(tempoRefeicao);
+              
+              console.log('✅ Valores calculados com sucesso:', {
+                jornada_total: resultado.jornada_total,
+                carga_horaria: resultado.carga_horaria,
+                hora_extra_50: resultado.hora_extra_50,
+                he_noturno: resultado.he_noturno,
+                tempo_refeicao: resultado.tempo_refeicao,
+                daily_value: resultado.daily_value,
+                food_value: resultado.food_value
+              });
+            } catch (error) {
+              console.error('❌ Erro ao calcular valores especiais:', error);
+              // Em caso de erro, usar valores padrão
+              resultado.jornada_total = '00:00';
+              resultado.carga_horaria = '08:00';
+              resultado.hora_extra_50 = '00:00';
+              resultado.he_noturno = '00:00';
+              resultado.adicional_noturno = '00:00';
+              resultado.tempo_refeicao = '00:00';
+            }
+          } else {
+            console.log('⚠️ Motivo especial mas sem horários de jornada');
+          }
+        } else {
+          console.log('✅ Motivo não requer cálculos especiais, usando valores padrão');
+          // Para motivos que não são GARAGEM ou CARGA/DESCARGA, definir valores padrão
+          resultado.jornada_total = '00:00';
+          resultado.carga_horaria = '08:00';
+          resultado.hora_extra_50 = '00:00';
+          resultado.he_noturno = '00:00';
+          resultado.adicional_noturno = '00:00';
+          resultado.tempo_refeicao = '00:00';
+          resultado.daily_value = 0.0;
+          resultado.food_value = 0.0;
+        }
+        
+        console.log('🔄 Resultado final:', resultado);
+        return resultado;
+      }
+
+      // Função para enviar dados do modal
+      window.enviarDadosModal = function(formData) {
+        console.log('🔄 Iniciando envio de dados:', formData);
+        
+        // Verificar se SweetAlert2 está disponível
+        if (typeof Swal === 'undefined') {
+          console.error('❌ SweetAlert2 não está disponível!');
+          console.error('❌ Tentando usar alert nativo...');
+          
+          // Tentar recarregar SweetAlert2
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+          script.onload = function() {
+            console.log('✅ SweetAlert2 recarregado, continuando...');
+            window.enviarDadosModal(formData); // Tentar novamente
+          };
+          script.onerror = function() {
+            console.error('❌ Falha ao recarregar SweetAlert2');
+            alert('Erro: SweetAlert2 não carregado. Dados podem ter sido salvos, mas não há feedback visual.');
+          };
+          document.head.appendChild(script);
+          return;
+        }
+        
+        // Calcular todos os valores antes de enviar
+        const dadosCalculados = window.calcularValoresAntesDeEnviar(formData);
+        console.log('🔄 Dados calculados:', dadosCalculados);
+        
+        // Iniciar o progresso
+        progressManager.startOperation('Salvando', 'Processando dados...');
+
+        // Enviar dados
+        $.ajax({
+          url: $("#modal-form-dayoff").attr('action'),
+          method: 'POST',
+          data: JSON.stringify(dadosCalculados),
+          contentType: 'application/json',
+          success: function(response) {
+            console.log('✅ Resposta de sucesso:', response);
+            progressManager.finishOperation();
+            if (response.status === 'success') {
+              Swal.fire({
+                icon: 'success',
+                title: 'Sucesso!',
+                text: response.message
+              }).then(() => {
+                // Limpar formulário e fechar modal
+                $("#modal-form-dayoff")[0].reset();
+                $("#modal_motorist_id").val('');
+                $("#modal_truck_id").val('');
+                
+                // Limpar campos específicos
+                $("#modal_placa_veiculo").val('');
+                $("#modal_inicio_jornada").val('');
+                $("#modal_fim_jornada").val('');
+                $("#modal_inicio_refeicao").val('');
+                $("#modal_fim_refeicao").val('');
+                
+                // Ocultar campos condicionais
+                $("#modal_garagem-fields").hide();
+                
+                // Fechar modal
+                closeInsertDataModal();
+                
+                // Atualizar tabela de motoristas
+                console.log('🔄 Atualizando tabela de motoristas...');
+                fetchUpdateData();
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: response.message || 'Erro ao salvar os dados.'
+              });
+            }
+          },
+          error: function(xhr) {
+            console.log('❌ Erro na requisição:', xhr);
+            progressManager.finishOperation();
+            
+            if (xhr.status === 409) {
+              console.log('🔄 Conflito detectado, tratando...');
+              
+              try {
+                // Conflito detectado - usar novo modal formatado
+                const response = JSON.parse(xhr.responseText);
+                console.log('🔄 Resposta de conflito:', response);
+                
+                // Verificar se a função handleConflictResponse está disponível
+                if (typeof handleConflictResponse === 'function') {
+                  console.log('✅ Função handleConflictResponse disponível');
+                  
+                  handleConflictResponse(response, function() {
+                    // Callback para quando usuário confirma substituição
+                    console.log('🔄 Usuário confirmou substituição, reenviando...');
+                    formData.substituir = true;
+                    progressManager.startOperation('Substituindo', 'Processando dados...');
+                    // Recalcular valores com substituir=true
+                    const dadosSubstituicao = window.calcularValoresAntesDeEnviar(formData);
+                    $.ajax({
+                      url: $("#modal-form-dayoff").attr('action'),
+                      method: 'POST',
+                      data: JSON.stringify(dadosSubstituicao),
+                      contentType: 'application/json',
+                      success: function(response) {
+                        console.log('✅ Substituição bem-sucedida:', response);
+                        progressManager.finishOperation();
+                        if (response.status === 'success') {
+                          Swal.fire({
+                            icon: 'success',
+                            title: 'Sucesso!',
+                            text: response.message
+                          }).then(() => {
+                            // Limpar formulário e fechar modal
+                            $("#modal-form-dayoff")[0].reset();
+                            $("#modal_motorist_id").val('');
+                            $("#modal_truck_id").val('');
+                            
+                            // Limpar campos específicos
+                            $("#modal_placa_veiculo").val('');
+                            $("#modal_inicio_jornada").val('');
+                            $("#modal_fim_jornada").val('');
+                            $("#modal_inicio_refeicao").val('');
+                            $("#modal_fim_refeicao").val('');
+                            
+                            // Ocultar campos condicionais
+                            $("#modal_garagem-fields").hide();
+                            
+                            // Fechar modal
+                            closeInsertDataModal();
+                            
+                            // Atualizar tabela de motoristas
+                            console.log('🔄 Atualizando tabela de motoristas após substituição...');
+                            fetchUpdateData();
+                          });
+                        } else {
+                          Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: response.message || 'Erro ao processar a substituição.'
+                          });
+                        }
+                      },
+                      error: function(xhr) {
+                        console.log('❌ Erro na substituição:', xhr);
+                        progressManager.finishOperation();
+                        Swal.fire({
+                          icon: 'error',
+                          title: 'Erro',
+                          text: 'Erro ao processar a substituição.'
+                        });
+                      }
+                    });
+                  });
+                } else {
+                  console.error('❌ Função handleConflictResponse não está disponível');
+                  // Fallback: usar SweetAlert2 diretamente
+                  Swal.fire({
+                    icon: 'warning',
+                    title: 'Conflito Detectado',
+                    text: 'Já existem registros para este motorista no período selecionado. Deseja substituir?',
+                    showCancelButton: true,
+                    confirmButtonText: 'Substituir',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d'
+                  }).then((result) => {
+                    if (result.isConfirmed) {
+                      console.log('🔄 Usuário confirmou substituição via fallback...');
+                      // Implementar lógica de substituição aqui se necessário
+                      Swal.fire({
+                        icon: 'info',
+                        title: 'Funcionalidade em Desenvolvimento',
+                        text: 'A funcionalidade de substituição está sendo implementada. Por favor, escolha outro período ou entre em contato com o suporte.'
+                      });
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('❌ Erro ao processar conflito:', error);
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Erro ao Processar Conflito',
+                  text: 'Ocorreu um erro ao processar o conflito. Tente novamente ou entre em contato com o suporte.'
+                });
+              }
+            } else {
+              console.log('❌ Erro não relacionado a conflito:', xhr.status, xhr.statusText);
+              Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: 'Erro ao salvar os dados.'
+              });
+            }
+          }
+        });
+      }
+
+      // Função para mostrar progresso durante a análise
+      function mostrarProgresso() {
+        const placa = document.getElementById("truck_id").value.trim();
+        const motorista = document.getElementById("motorist_id").value.trim();
+        
+        if (!placa || !motorista) {
+          alert("❗ Preencha os campos obrigatórios: PLACA e MOTORISTA.");
+          return false;
+        }
+        
+        // Mostrar overlay de progresso se existir
+        const progressOverlay = document.getElementById('progress-overlay');
+        if (progressOverlay) {
+          progressOverlay.style.display = 'flex';
+        }
+        
+        return true;
+      }
+
+      $(document).ready(function () {
+        console.log("Página Conferir Atualização carregada.");
+
+        // Função para buscar dados da API e popular a tabela
+        window.fetchUpdateData = function() {
+          console.log('🔄 Iniciando fetchUpdateData...');
+          console.log('🔄 URL da API:', "/api/closure/check_motorist_updates");
+          console.log('🔄 ProgressManager disponível:', typeof progressManager !== 'undefined');
+          
+          if (typeof progressManager !== 'undefined') {
+            progressManager.startOperation('Verificando Atualizações', 'Buscando status dos motoristas...');
+          } else {
+            console.warn('⚠️ ProgressManager não está disponível');
+          }
+
+          $.ajax({
+            url: "/api/closure/check_motorist_updates",
+            method: "GET",
+            dataType: "json",
+            timeout: 30000, // 30 segundos de timeout
+            beforeSend: function() {
+              console.log('🔄 Enviando requisição AJAX...');
+            },
+            success: function (data) {
+              console.log("✅ Dados da API recebidos:", data);
+              console.log("🔄 Tipo de dados:", typeof data);
+              console.log("🔄 É array?", Array.isArray(data));
+              console.log("🔄 Quantidade de motoristas:", data ? data.length : 'N/A');
+              
+              if (typeof progressManager !== 'undefined') {
+                progressManager.updateProgress(50, 'Atualizando informações...');
+              }
+              
+              data.forEach(function (motorist_data, index) {
+                var $row = $('tr[data-motorist-id="' + motorist_data.id + '"]');
+                if ($row.length) {
+                  $row.find(".last-update-date").text(motorist_data.last_update);
+                  
+                  var $statusCell = $row.find(".status");
+                  $statusCell.text(motorist_data.status);
+                  $statusCell
+                    .removeClass("status-atualizado status-pendente status-atrasado sem-registros")
+                    .addClass(motorist_data.status_class);
+                  
+                  // Armazena as observações como atributo data para usar no hover
+                  $statusCell.attr("data-obs", motorist_data.obs);
+                }
+                
+                // Atualiza o progresso baseado no número de motoristas processados
+                const progress = Math.min(90, 50 + Math.floor((index + 1) / data.length * 40));
+                if (typeof progressManager !== 'undefined') {
+                  progressManager.updateProgress(progress, 'Atualizando informações...');
+                }
+              });
+              
+              if (typeof progressManager !== 'undefined') {
+                progressManager.finishOperation();
+              }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+              console.error("❌ Erro ao buscar dados da API:");
+              console.error("  - Status:", jqXHR.status);
+              console.error("  - Status Text:", jqXHR.statusText);
+              console.error("  - Response Text:", jqXHR.responseText);
+              console.error("  - Text Status:", textStatus);
+              console.error("  - Error Thrown:", errorThrown);
+              
+              if (typeof progressManager !== 'undefined') {
+                progressManager.finishOperation(() => {
+                  $(".shared-table tbody").html(
+                    '<tr><td colspan="4">Erro ao carregar dados. Status: ' + jqXHR.status + '. Tente novamente.</td></tr>'
+                  );
+                });
+              } else {
+                $(".shared-table tbody").html(
+                  '<tr><td colspan="4">Erro ao carregar dados. Status: ' + jqXHR.status + '. Tente novamente.</td></tr>'
+                );
+              }
+            },
+            timeout: function() {
+              console.error("❌ Timeout na requisição AJAX (30s)");
+              if (typeof progressManager !== 'undefined') {
+                progressManager.finishOperation(() => {
+                  $(".shared-table tbody").html(
+                    '<tr><td colspan="4">Timeout na requisição. Verifique a conexão e tente novamente.</td></tr>'
+                  );
+                });
+              } else {
+                $(".shared-table tbody").html(
+                  '<tr><td colspan="4">Timeout na requisição. Verifique a conexão e tente novamente.</td></tr>'
+                );
+              }
+            }
+          });
+        }
+        
+        // Chamar a função após ela ser definida
+        console.log("🔄 Função fetchUpdateData definida, executando...");
+        window.fetchUpdateData();
+
+        // Event Handlers para hover na coluna Status
+        let modalTimeout;
+        let currentModal = null;
+        let hoverTimeout;
+        let hoveredCell = null;
+        
+        $(document).on('mouseenter', '.status-hover', function() {
+          const cell = $(this);
+          
+          // Limpa timeout anterior se for uma célula diferente
+          if (hoveredCell && hoveredCell[0] !== cell[0]) {
+            clearTimeout(hoverTimeout);
+            if (currentModal) {
+              closeModal(currentModal);
+            }
+          }
+          
+          hoveredCell = cell;
+          
+          // Delay de 1 segundo antes de mostrar o modal
+          hoverTimeout = setTimeout(() => {
+            if (hoveredCell && hoveredCell[0] === cell[0]) {
+              showModal(cell);
+            }
+          }, 500);
+        });
+        
+        $(document).on('mouseleave', '.status-hover', function() {
+          const cell = $(this);
+          
+          // Limpa o timeout de hover
+          clearTimeout(hoverTimeout);
+          
+          // Delay para fechar o modal
+          modalTimeout = setTimeout(() => {
+            if (currentModal && !currentModal.is(':hover')) {
+              closeModal(currentModal);
+            }
+          }, 300);
+          
+          // Reseta a célula hovered se for a mesma
+          if (hoveredCell && hoveredCell[0] === cell[0]) {
+            hoveredCell = null;
+          }
+        });
+        
+        // Event Handlers para os botões da coluna Ações
+        $(document).on('click', '.btn-detalhes', function() {
+          const motoristId = $(this).closest('tr').data('motorist-id');
+          const motoristName = $(this).closest('tr').find('td:first').text();
+          showMotoristDetails(motoristId, motoristName);
+        });
+        
+        $(document).on('click', '.btn-download', function() {
+          const motoristId = $(this).closest('tr').data('motorist-id');
+          const motoristName = $(this).closest('tr').find('td:first').text();
+          downloadMotoristReport(motoristId, motoristName);
+        });
+        
+        // Função para mostrar o modal
+        function showModal(cell) {
+          const obs = cell.attr('data-obs');
+          const status = cell.text();
+          
+          // Remove modais existentes
+          $('.status-modal').remove();
+          
+          // Determina o tipo de status para estilização
+          let modalClass = '';
+          let title = '';
+          let content = '';
+          
+          if (status === 'Atualizado') {
+            modalClass = 'completo';
+            title = 'Status: Atualizado';
+            content = 'Todos os registros estão completos e atualizados.';
+          } else if (status === 'Pendente de Atualização') {
+            modalClass = 'pendente';
+            title = 'Status: Pendente de Atualização';
+            content = 'Existem datas faltantes no sistema. Atualização necessária.';
+          } else if (status === 'Sem registros') {
+            modalClass = 'sem-registros';
+            title = 'Status: Sem Registros';
+            content = 'Não há registros disponíveis para este motorista.';
+          } else {
+            modalClass = 'faltante';
+            title = 'Status: Atrasado';
+            content = 'As seguintes datas estão faltando no sistema:';
+          }
+          
+          // Cria o modal
+          const modal = $(`
+            <div class="status-modal ${modalClass}">
+              <div class="status-modal-header">
+                <h3 class="status-modal-title">${title}</h3>
+                <button class="status-modal-close">&times;</button>
+              </div>
+              <div class="status-modal-content">
+                ${content}
+                ${obs && obs !== 'Completo' ? `
+                  <div class="dates-list">
+                    <strong>Datas Faltantes:</strong>
+                    <div class="dates">${obs}</div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `);
+          
+          $('body').append(modal);
+          currentModal = modal;
+          
+          // Posiciona o modal
+          const cellOffset = cell.offset();
+          const cellWidth = cell.outerWidth();
+          const cellHeight = cell.outerHeight();
+          const windowWidth = $(window).width();
+          const windowHeight = $(window).height();
+          const modalWidth = modal.outerWidth();
+          const modalHeight = modal.outerHeight();
+          
+          // Calcula posição horizontal
+          let left = cellOffset.left + (cellWidth / 2) - (modalWidth / 2);
+          
+          // Ajusta posição horizontal se o modal sair da tela
+          if (left < 20) left = 20;
+          if (left + modalWidth > windowWidth - 20) left = windowWidth - modalWidth - 20;
+          
+          // Calcula posição vertical - verifica se há espaço suficiente acima
+          let top;
+          const spaceAbove = cellOffset.top;
+          const spaceBelow = windowHeight - (cellOffset.top + cellHeight);
+          
+          if (spaceAbove > modalHeight + 20) {
+            // Posiciona acima da célula se houver espaço suficiente
+            top = cellOffset.top - modalHeight - 15;
+          } else if (spaceBelow > modalHeight + 20) {
+            // Posiciona abaixo da célula se houver espaço suficiente
+            top = cellOffset.top + cellHeight + 15;
+          } else {
+            // Se não houver espaço nem acima nem abaixo, posiciona no centro da tela
+            top = Math.max(20, (windowHeight - modalHeight) / 2);
+          }
+          
+          // Garante que o modal não saia da tela
+          if (top < 20) top = 20;
+          if (top + modalHeight > windowHeight - 20) top = windowHeight - modalHeight - 20;
+          
+          modal.css({
+            left: left,
+            top: top
+          });
+          
+          // Mostra o modal com animação
+          modal.fadeIn(300);
+          
+          // Adiciona evento para fechar o modal
+          modal.find('.status-modal-close').click(function() {
+            closeModal(modal);
+          });
+        }
+        
+        // Função para fechar o modal
+        function closeModal(modal) {
+          if (modal) {
+            modal.fadeOut(200, function() {
+              $(this).remove();
+              if (currentModal === modal) {
+                currentModal = null;
+              }
+            });
+          }
+        }
+        
+        // Fecha o modal quando clicar fora dele
+        $(document).on('click', function(e) {
+          if (!$(e.target).closest('.status-modal, .status-hover').length) {
+            if (currentModal) {
+              closeModal(currentModal);
+            }
+          }
+        });
+        
+        // Previne que o modal feche quando o mouse estiver sobre ele
+        $(document).on('mouseenter', '.status-modal', function() {
+          clearTimeout(modalTimeout);
+        });
+        
+        $(document).on('mouseleave', '.status-modal', function() {
+          modalTimeout = setTimeout(() => {
+            if (currentModal) {
+              closeModal(currentModal);
+            }
+          }, 500); // Delay ainda maior quando sai do modal
+        });
+
+        // Função para mostrar detalhes do motorista
+        function showMotoristDetails(motoristId, motoristName) {
+          try {
+            console.log('Tentando abrir modal para:', { motoristId, motoristName });
+            
+            // Verificar se os dados são válidos
+            if (!motoristId || !motoristName) {
+              console.error('Dados inválidos:', { motoristId, motoristName });
+              alert('Dados do motorista inválidos. Tente novamente.');
+              return;
+            }
+
+            // Usar a nova função global do modal
+            if (window.showMotoristDetailsModal) {
+              window.showMotoristDetailsModal(motoristId, motoristName);
+            } else {
+              console.error("Modal de detalhes não está disponível");
+              alert("Erro ao abrir modal de detalhes. Tente recarregar a página.");
+            }
+          } catch (error) {
+            console.error('Erro ao abrir modal:', error);
+            alert('Erro interno ao abrir modal. Tente novamente.');
+          }
+        }
+        
+        // Função para download do relatório do motorista
+        function downloadMotoristReport(motoristId, motoristName) {
+          try {
+            console.log('Abrindo modal de download para:', { motoristId, motoristName });
+            
+            // Preencher os campos do modal com os dados do motorista
+            document.getElementById('download_motorist_id').value = motoristId;
+            document.getElementById('download_motorist_search').value = motoristName;
+            
+            // Definir datas padrão (últimos 30 dias)
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+            
+            document.getElementById('download_data_inicio').value = thirtyDaysAgo.toISOString().split('T')[0];
+            document.getElementById('download_data_fim').value = today.toISOString().split('T')[0];
+            
+            // Mostrar o modal
+            document.getElementById('downloadModal').style.display = 'block';
+            
+          } catch (error) {
+            console.error('Erro ao abrir modal de download:', error);
+            alert('Erro interno ao abrir modal de download. Tente novamente.');
+          }
+        }
+        
+        // Função global para fechar o modal de download
+        window.closeDownloadModal = function() {
+          document.getElementById('downloadModal').style.display = 'none';
+          // Limpar o formulário
+          document.getElementById('download-form').reset();
+        }
+        
+        // Event handler para o formulário de download
+        document.getElementById('download-form').addEventListener('submit', function(event) {
+          event.preventDefault();
+          
+          const motoristId = document.getElementById('download_motorist_id').value;
+          const fromDate = document.getElementById('download_data_inicio').value;
+          const toDate = document.getElementById('download_data_fim').value;
+          const format = document.getElementById('download_format').value;
+          
+          if (!motoristId || !fromDate || !toDate || !format) {
+            alert('Por favor, preencha todos os campos obrigatórios.');
+            return;
+          }
+          
+          // Validar datas
+          if (new Date(fromDate) > new Date(toDate)) {
+            alert('A data de início não pode ser maior que a data de fim.');
+            return;
+          }
+          
+          // Processar download
+          processDownload(motoristId, fromDate, toDate, format);
+        });
+        
+        // Função para processar o download
+        function processDownload(motoristId, fromDate, toDate, format) {
+          try {
+            console.log('Processando download:', { motoristId, fromDate, toDate, format });
+            
+            // Fechar o modal
+            window.closeDownloadModal();
+            
+            // Redirecionar para a tela de download com os parâmetros
+            const url = `/closure_reports_download?motorist_id=${motoristId}&from_date=${fromDate}&to_date=${toDate}&format=${format}`;
+            window.open(url, '_blank');
+            
+          } catch (error) {
+            console.error('Erro ao processar download:', error);
+            alert('Erro interno ao processar download. Tente novamente.');
+          }
+        }
+        
+        // Fechar modal quando clicar fora dele
+        window.onclick = function(event) {
+          const modal = document.getElementById('downloadModal');
+          if (event.target === modal) {
+            window.closeDownloadModal();
+          }
+          
+          // Fechar modal de inserir dados quando clicar fora
+          const insertModal = document.getElementById('insertDataModal');
+          if (event.target === insertModal) {
+            window.closeInsertDataModal();
+          }
+        }
+        
+        // Função para limpar modal manualmente
+        window.limparModalInserirDados = function() {
+          console.log('🔄 Limpando modal manualmente...');
+          
+          // Limpar formulário
+          $("#modal-form-dayoff")[0].reset();
+          
+          // Limpar campos específicos
+          $("#modal_motorist_id").val('');
+          $("#modal_truck_id").val('');
+          $("#modal_placa_veiculo").val('');
+          $("#modal_inicio_jornada").val('');
+          $("#modal_fim_jornada").val('');
+          $("#modal_inicio_refeicao").val('');
+          $("#modal_fim_refeicao").val('');
+          
+          // Ocultar campos condicionais
+          $("#modal_garagem-fields").hide();
+          
+          // Resetar required dos campos
+          $("#modal_inicio_jornada, #modal_fim_jornada").prop("required", false);
+          $("#modal_inicio_refeicao, #modal_fim_refeicao").prop("required", false);
+          
+          console.log('✅ Modal limpo manualmente');
+        }
+        
+
+
+        // Inicializar autocomplete para os campos de análise
+        initializeAnalysisAutocomplete();
+        
+        // Inicializar filtro dinâmico
+        initializeDynamicFilter();
+        
+        // ===== INICIALIZAÇÃO DO MODAL DE INSERIR DADOS =====
+        
+        // Carregar dados Jinja2 dos atributos HTML
+        try {
+          console.log('🔄 Iniciando carregamento de dados Jinja2...');
+          const jinja2Data = document.getElementById('jinja2-data');
+          console.log('🔄 Elemento jinja2-data:', jinja2Data);
+          
+          if (jinja2Data) {
+            console.log('✅ Elemento jinja2-data encontrado');
+            console.log('🔄 Atributos disponíveis:', jinja2Data.getAttributeNames());
+            
+            // Carregar motoristas
+            const motoristsData = jinja2Data.getAttribute('data-motorists');
+            console.log('🔄 Dados de motoristas (raw):', motoristsData);
+            if (motoristsData) {
+              window.motoristas = JSON.parse(motoristsData);
+              console.log('✅ Motoristas carregados:', window.motoristas.length);
+              console.log('🔄 Primeiro motorista:', window.motoristas[0]);
+            } else {
+              console.error('❌ Dados de motoristas não encontrados');
+            }
+            
+            // Carregar veículos
+            const trucksData = jinja2Data.getAttribute('data-trucks');
+            console.log('🔄 Dados de veículos (raw):', trucksData);
+            if (trucksData) {
+              window.veiculos = JSON.parse(trucksData);
+              console.log('✅ Veículos carregados:', window.veiculos.length);
+              console.log('🔄 Primeiro veículo:', window.veiculos[0]);
+            } else {
+              console.error('❌ Dados de veículos não encontrados');
+            }
+            
+            // Carregar critérios
+            const criteriasData = jinja2Data.getAttribute('data-criterias');
+            console.log('🔄 Dados de critérios (raw):', criteriasData);
+            if (criteriasData) {
+              window.criterios = JSON.parse(criteriasData);
+              console.log('✅ Critérios carregados:', window.criterios.length);
+              console.log('🔄 Primeiro critério:', window.criterios[0]);
+              
+              // Verificar se há critérios com GARAGEM ou CARGA/DESCARGA
+              const criteriosEspeciais = window.criterios.filter(c => 
+                c.valor_filtro && (c.valor_filtro.toUpperCase().includes('GARAGEM') || 
+                                 c.valor_filtro.toUpperCase().includes('CARGA/DESCARGA'))
+              );
+              console.log('🔄 Critérios especiais encontrados:', criteriosEspeciais);
+            } else {
+              console.error('❌ Dados de critérios não encontrados');
+            }
+          } else {
+            console.error('❌ Elemento jinja2-data não encontrado');
+            console.error('❌ Elementos com data-* na página:');
+            document.querySelectorAll('[data-*]').forEach(el => {
+              console.error('  - Elemento:', el.tagName, el.id, el.getAttributeNames());
+            });
+          }
+        } catch (error) {
+          console.error('❌ Erro ao carregar dados Jinja2:', error);
+          console.error('❌ Stack trace:', error.stack);
+        }
+        
+        // Controle de exibição dos campos de horários para GARAGEM e CARGA/DESCARGA
+        console.log('🔄 Configurando event listener para campo motivo...');
+        console.log('🔄 jQuery disponível:', typeof $ !== 'undefined');
+        console.log('🔄 Modal motivo existe:', $('#modal_motivo').length);
+        console.log('🔄 Modal garagem-fields existe:', $('#modal_garagem-fields').length);
+        
+        // Aguardar um pouco para garantir que o DOM está pronto
+        setTimeout(() => {
+          console.log('🔄 Executando setTimeout após 500ms...');
+          
+          const motivoSelect = $("#modal_motivo");
+          const garagemFields = $("#modal_garagem-fields");
+          
+          console.log('🔄 Buscando elementos após timeout:');
+          console.log('  - motivoSelect:', motivoSelect.length);
+          console.log('  - garagemFields:', garagemFields.length);
+          console.log('  - motivoSelect[0]:', motivoSelect[0]);
+          console.log('  - garagemFields[0]:', garagemFields[0]);
+          
+          if (motivoSelect.length > 0) {
+            console.log('✅ Campo motivo encontrado, adicionando event listener...');
+            
+            // Testar se o campo está funcionando
+            console.log('🔄 Testando valor atual do motivo:', motivoSelect.val());
+            console.log('🔄 Testando se o campo é visível:', motivoSelect.is(':visible'));
+            
+            motivoSelect.off('change').on("change", function() {
+              console.log('🔄 EVENTO CHANGE DISPARADO!');
+              const valorOriginal = $(this).val();
+              console.log('🔄 Motivo original:', valorOriginal);
+              
+              // Validar se o valor não é null/undefined
+              if (!valorOriginal) {
+                console.log('🔄 Campo vazio, ocultando campos especiais');
+                garagemFields.hide();
+                $("#modal_placa_veiculo, #modal_inicio_jornada, #modal_fim_jornada, #modal_inicio_refeicao, #modal_fim_refeicao").prop("required", false);
+                return;
+              }
+              
+              const motivo = valorOriginal.toUpperCase();
+              console.log('🔄 Motivo selecionado:', motivo);
+              
+              if (motivo && (motivo.includes("GARAGEM") || motivo.includes("CARGA/DESCARGA"))) {
+                console.log('✅ Mostrando campos de GARAGEM/CARGA-DESCARGA');
+                console.log('🔄 Antes de mostrar - garagem-fields visível:', garagemFields.is(':visible'));
+                garagemFields.show();
+                console.log('🔄 Depois de mostrar - garagem-fields visível:', garagemFields.is(':visible'));
+                console.log('🔄 CSS display:', garagemFields.css('display'));
+                
+                // PLACA DO VEÍCULO é opcional agora
+                $("#modal_inicio_jornada, #modal_fim_jornada").prop("required", true);
+                $("#modal_inicio_refeicao, #modal_fim_refeicao").prop("required", false); // Refeição opcional
+              } else {
+                console.log('❌ Ocultando campos de GARAGEM/CARGA-DESCARGA');
+                console.log('🔄 Antes de ocultar - garagem-fields visível:', garagemFields.is(':visible'));
+                garagemFields.hide();
+                console.log('🔄 Depois de ocultar - garagem-fields visível:', garagemFields.is(':visible'));
+                console.log('🔄 CSS display:', garagemFields.css('display'));
+                
+                $("#modal_placa_veiculo, #modal_inicio_jornada, #modal_fim_jornada, #modal_inicio_refeicao, #modal_fim_refeicao").prop("required", false);
+              }
+            });
+            
+            console.log('✅ Event listener adicionado com sucesso ao campo motivo');
+            
+            // Testar manualmente o event listener
+            console.log('🔄 Testando event listener manualmente...');
+            motivoSelect.trigger('change');
+            
+          } else {
+            console.error('❌ Campo motivo não encontrado no DOM');
+            console.error('❌ Elementos encontrados na página:');
+            $('select[id*="motivo"]').each(function() {
+              console.error('  - Select encontrado:', this.id, this.name, $(this).val());
+            });
+          }
+        }, 500);
+
+        // Validação das datas no modal
+        $("#modal_start_date, #modal_end_date").on("change", function () {
+          const startDate = new Date($("#modal_start_date").val());
+          const endDate = new Date($("#modal_end_date").val());
+
+          if (endDate < startDate) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Data inválida',
+              text: 'A Data de Fim deve ser igual ou posterior à Data de Início.'
+            });
+            $("#modal_end_date").val("");
+          }
+        });
+
+                // Manipulação do formulário do modal
+        $("#modal-form-dayoff").on("submit", function (e) {
+          e.preventDefault();
+          
+          const formData = {
+            motorist_id: $("#modal_motorist_id").val(),
+            start_date: $("#modal_start_date").val(),
+            end_date: $("#modal_end_date").val(),
+            motivo: $("#modal_motivo").val(),
+            truck_id: $("#modal_truck_id").val(),
+            inicio_jornada: $("#modal_inicio_jornada").val(),
+            fim_jornada: $("#modal_fim_jornada").val(),
+            inicio_refeicao: $("#modal_inicio_refeicao").val(),
+            fim_refeicao: $("#modal_fim_refeicao").val()
+          };
+
+          // Validações específicas para GARAGEM e CARGA/DESCARGA
+          const motivo = $("#modal_motivo").val().toUpperCase();
+          if (motivo && (motivo.includes("GARAGEM") || motivo.includes("CARGA/DESCARGA"))) {
+            // PLACA DO VEÍCULO é opcional agora
+            if (!formData.inicio_jornada || !formData.fim_jornada) {
+              Swal.fire({
+                icon: 'error',
+                title: 'Campos obrigatórios',
+                text: 'Para ' + motivo + ', os horários de início e fim de jornada são obrigatórios.'
+              });
+              return;
+            }
+            // Horários de refeição são opcionais agora
+            
+            // Validação: verificar se o tempo de refeição está dentro do tempo de jornada
+            if (formData.inicio_refeicao && formData.fim_refeicao && formData.inicio_jornada && formData.fim_jornada) {
+              const inicioJornadaMin = window.tempoParaMinutos(formData.inicio_jornada);
+              const fimJornadaMin = window.tempoParaMinutos(formData.fim_jornada);
+              const inicioRefeicaoMin = window.tempoParaMinutos(formData.inicio_refeicao);
+              const fimRefeicaoMin = window.tempoParaMinutos(formData.fim_refeicao);
+              
+              // Verificar se a refeição está dentro da jornada
+              if (inicioRefeicaoMin < inicioJornadaMin || fimRefeicaoMin > fimJornadaMin) {
+                Swal.fire({
+                  icon: 'warning',
+                  title: 'Aviso',
+                  text: `Tempo de refeição (${formData.inicio_refeicao}-${formData.fim_refeicao}) está fora do tempo de jornada (${formData.inicio_jornada}-${formData.fim_jornada}). Deseja continuar mesmo assim?`,
+                  showCancelButton: true,
+                  confirmButtonText: 'Continuar',
+                  cancelButtonText: 'Corrigir'
+                }).then((result) => {
+                  if (!result.isConfirmed) {
+                    return;
+                  }
+                  // Se confirmou, continua com o envio
+                  window.enviarDadosModal(formData);
+                });
+                return;
+              }
+            }
+          }
+          
+          // Se passou por todas as validações, enviar dados
+          window.enviarDadosModal(formData);
+        });
+      
+              // Adicionar event listener para tecla ESC
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'Escape') {
+            const insertModal = document.getElementById('insertDataModal');
+            if (insertModal && insertModal.style.display !== 'none') {
+              window.closeInsertDataModal();
+            }
+          }
+        });
+      });
+
+          // ===== FUNÇÃO DE INICIALIZAÇÃO DO AUTOCOMPLETE DO MODAL =====
+      
+      // Verificar se as funções foram definidas
+      console.log('=== FUNÇÕES GLOBAIS DEFINIDAS ===');
+      console.log('toggleInsertDataModal:', typeof window.toggleInsertDataModal);
+      console.log('openInsertDataModal:', typeof window.openInsertDataModal);
+      console.log('closeInsertDataModal:', typeof window.closeInsertDataModal);
+      console.log('tempoParaMinutos:', typeof window.tempoParaMinutos);
+      console.log('calcularCargaHoraria:', typeof window.calcularCargaHoraria);
+      
+      // Função de teste para campos condicionais
+      window.testarCamposCondicionais = function() {
+        console.log('=== TESTANDO CAMPOS CONDICIONAIS ===');
+        console.log('🔄 Teste iniciado em:', new Date().toISOString());
+        
+        // Verificar jQuery
+        console.log('🔄 jQuery disponível:', typeof $ !== 'undefined');
+        console.log('🔄 jQuery versão:', $.fn.jquery);
+        
+        // Verificar elementos do modal
+        const motivoSelect = $("#modal_motivo");
+        const garagemFields = $("#modal_garagem-fields");
+        const inicioJornada = $("#modal_inicio_jornada");
+        const fimJornada = $("#modal_fim_jornada");
+        
+        console.log('🔄 Elementos encontrados:');
+        console.log('  - motivoSelect:', motivoSelect.length, motivoSelect[0]);
+        console.log('  - garagemFields:', garagemFields.length, garagemFields[0]);
+        console.log('  - inicioJornada:', inicioJornada.length, inicioJornada[0]);
+        console.log('  - fimJornada:', fimJornada.length, fimJornada[0]);
+        
+        // Verificar valores e estado
+        console.log('🔄 Estado atual:');
+        console.log('  - Valor do motivo:', motivoSelect.val());
+        console.log('  - Campos visíveis:', garagemFields.is(':visible'));
+        console.log('  - CSS display:', garagemFields.css('display'));
+        console.log('  - CSS visibility:', garagemFields.css('visibility'));
+        console.log('  - CSS opacity:', garagemFields.css('opacity'));
+        
+        // Verificar se o modal está aberto
+        const modal = document.getElementById('insertDataModal');
+        console.log('🔄 Modal aberto:', modal && modal.style.display !== 'none');
+        console.log('🔄 Modal display:', modal ? modal.style.display : 'N/A');
+        
+        // Verificar dados Jinja2
+        console.log('🔄 Dados Jinja2:');
+        console.log('  - motoristas:', window.motoristas?.length || 'N/A');
+        console.log('  - veiculos:', window.veiculos?.length || 'N/A');
+        console.log('  - criterios:', window.criterios?.length || 'N/A');
+        
+        // Testar seleção de GARAGEM
+        console.log('🔄 Testando seleção de GARAGEM...');
+        
+        // Verificar se há opções no select
+        const opcoes = motivoSelect.find('option');
+        console.log('  - Opções disponíveis:', opcoes.length);
+        opcoes.each(function(index) {
+          console.log(`    ${index}: ${$(this).val()} - ${$(this).text()}`);
+        });
+        
+        // Tentar selecionar GARAGEM se existir
+        const opcaoGaragem = opcoes.filter(function() {
+          return $(this).val().toUpperCase().includes('GARAGEM');
+        });
+        
+        if (opcaoGaragem.length > 0) {
+          const valorGaragem = opcaoGaragem.first().val();
+          console.log('  - Opção GARAGEM encontrada:', valorGaragem);
+          motivoSelect.val(valorGaragem);
+          console.log('  - Valor definido:', motivoSelect.val());
+          
+          // Disparar evento change
+          motivoSelect.trigger('change');
+          console.log('  - Evento change disparado');
+          
+          // Aguardar um pouco e verificar resultado
+          setTimeout(() => {
+            console.log('🔄 Resultado após 100ms:');
+            console.log('  - Campos visíveis:', garagemFields.is(':visible'));
+            console.log('  - CSS display:', garagemFields.css('display'));
+            console.log('  - Inicio jornada required:', inicioJornada.prop('required'));
+            console.log('  - Fim jornada required:', fimJornada.prop('required'));
+          }, 100);
+        } else {
+          console.log('❌ Nenhuma opção GARAGEM encontrada no select');
+          console.log('  - Tentando selecionar primeira opção válida...');
+          
+          const primeiraOpcao = opcoes.not('[value=""]').first();
+          if (primeiraOpcao.length > 0) {
+            const valorPrimeira = primeiraOpcao.val();
+            console.log('  - Primeira opção válida:', valorPrimeira);
+            motivoSelect.val(valorPrimeira);
+            motivoSelect.trigger('change');
+          }
+        }
+        
+        // Testar seleção de outro motivo
+        setTimeout(() => {
+          console.log('🔄 Testando limpeza do campo...');
+          motivoSelect.val('');
+          motivoSelect.trigger('change');
+          
+          setTimeout(() => {
+            console.log('🔄 Resultado após limpeza:');
+            console.log('  - Campos visíveis:', garagemFields.is(':visible'));
+            console.log('  - CSS display:', garagemFields.css('display'));
+          }, 100);
+        }, 300);
+      };
+      
+      // Função para verificar CSS e estilos
+      window.verificarCSS = function() {
+        console.log('=== VERIFICANDO CSS E ESTILOS ===');
+        
+        const garagemFields = $("#modal_garagem-fields");
+        const motivoSelect = $("#modal_motivo");
+        
+        if (garagemFields.length === 0) {
+          console.error('❌ Elemento garagem-fields não encontrado');
+          return;
+        }
+        
+        console.log('🔄 Estilos computados do elemento garagem-fields:');
+        const computedStyle = window.getComputedStyle(garagemFields[0]);
+        
+        const propriedadesImportantes = [
+          'display', 'visibility', 'opacity', 'position', 'z-index',
+          'width', 'height', 'max-width', 'max-height',
+          'overflow', 'clip', 'transform', 'filter'
+        ];
+        
+        propriedadesImportantes.forEach(prop => {
+          console.log(`  - ${prop}:`, computedStyle.getPropertyValue(prop));
+        });
+        
+        console.log('🔄 Estilos inline:');
+        console.log('  - style.display:', garagemFields[0].style.display);
+        console.log('  - style.visibility:', garagemFields[0].style.visibility);
+        console.log('  - style.opacity:', garagemFields[0].style.opacity);
+        
+        console.log('🔄 Classes CSS aplicadas:');
+        console.log('  - classList:', garagemFields[0].classList.toString());
+        
+        console.log('🔄 Pai do elemento:');
+        const parent = garagemFields[0].parentElement;
+        console.log('  - Parent tag:', parent.tagName);
+        console.log('  - Parent id:', parent.id);
+        console.log('  - Parent display:', window.getComputedStyle(parent).display);
+        
+        // Verificar se há CSS que possa estar interferindo
+        console.log('🔄 Verificando regras CSS que afetam este elemento...');
+        const sheets = document.styleSheets;
+        for (let i = 0; i < sheets.length; i++) {
+          try {
+            const rules = sheets[i].cssRules || sheets[i].rules;
+            if (rules) {
+              for (let j = 0; j < rules.length; j++) {
+                const rule = rules[j];
+                if (rule.selectorText && rule.selectorText.includes('garagem-fields')) {
+                  console.log('  - CSS Rule encontrada:', rule.selectorText, rule.style.cssText);
+                }
+              }
+            }
+          } catch (e) {
+            // Ignorar erros de CORS
+          }
+        }
+      };
+      
+      // Função para verificar critérios disponíveis
+      window.verificarCriterios = function() {
+        console.log('=== VERIFICANDO CRITÉRIOS DISPONÍVEIS ===');
+        
+        const motivoSelect = $("#modal_motivo");
+        if (motivoSelect.length === 0) {
+          console.error('❌ Campo motivo não encontrado');
+          return;
+        }
+        
+        console.log('🔄 Campo motivo encontrado');
+        console.log('🔄 Opções disponíveis no select:');
+        
+        const opcoes = motivoSelect.find('option');
+        console.log('  - Total de opções:', opcoes.length);
+        
+        opcoes.each(function(index) {
+          const valor = $(this).val();
+          const texto = $(this).text();
+          const isSelected = $(this).is(':selected');
+          console.log(`  ${index}: valor="${valor}" texto="${texto}" selecionado=${isSelected}`);
+        });
+        
+        // Verificar dados Jinja2
+        console.log('🔄 Dados Jinja2 carregados:');
+        console.log('  - Critérios:', window.criterios?.length || 'N/A');
+        console.log('  - Motoristas:', window.motoristas?.length || 'N/A');
+        console.log('  - Veículos:', window.veiculos?.length || 'N/A');
+        
+        if (window.criterios && window.criterios.length > 0) {
+          console.log('🔄 Detalhes dos critérios:');
+          window.criterios.forEach((criterio, index) => {
+            console.log(`  ${index}: valor_filtro="${criterio.valor_filtro}" carga_horaria="${criterio.carga_horaria_especial}"`);
+          });
+          
+          // Verificar critérios especiais
+          const criteriosEspeciais = window.criterios.filter(c => 
+            c.valor_filtro && (c.valor_filtro.toUpperCase().includes('GARAGEM') || 
+                             c.valor_filtro.toUpperCase().includes('CARGA/DESCARGA'))
+          );
+          console.log('🔄 Critérios especiais (GARAGEM/CARGA-DESCARGA):', criteriosEspeciais);
+        } else {
+          console.log('❌ Nenhum critério carregado');
+          
+          // Tentar recarregar dados
+          console.log('🔄 Tentando recarregar dados...');
+          try {
+            const jinja2Data = document.getElementById('jinja2-data');
+            if (jinja2Data) {
+              const criteriasData = jinja2Data.getAttribute('data-criterias');
+              console.log('🔄 Dados brutos de critérios:', criteriasData);
+              
+              if (criteriasData && criteriasData.trim() !== '[]') {
+                window.criterios = JSON.parse(criteriasData);
+                console.log('✅ Critérios recarregados:', window.criterios.length);
+              } else {
+                console.log('❌ Dados de critérios vazios no HTML');
+              }
+            }
+          } catch (error) {
+            console.error('❌ Erro ao recarregar critérios:', error);
+          }
+        }
+        
+        // Verificar se há opções no select que correspondem aos critérios
+        console.log('🔄 Verificando correspondência entre critérios e opções do select...');
+        if (window.criterios && window.criterios.length > 0) {
+          window.criterios.forEach(criterio => {
+            const opcaoEncontrada = opcoes.filter(function() {
+              return $(this).val() === criterio.valor_filtro;
+            });
+            
+            if (opcaoEncontrada.length > 0) {
+              console.log(`✅ Critério "${criterio.valor_filtro}" encontrado no select`);
+            } else {
+              console.log(`❌ Critério "${criterio.valor_filtro}" NÃO encontrado no select`);
+            }
+          });
+        }
+      };
+      
+      // Função para verificar veículos disponíveis
+      window.verificarVeiculos = function() {
+        console.log('=== VERIFICANDO VEÍCULOS DISPONÍVEIS ===');
+        
+        console.log('🔄 Dados Jinja2 carregados:');
+        console.log('  - Veículos:', window.veiculos?.length || 'N/A');
+        console.log('  - Motoristas:', window.motoristas?.length || 'N/A');
+        console.log('  - Critérios:', window.criterios?.length || 'N/A');
+        
+        if (window.veiculos && window.veiculos.length > 0) {
+          console.log('🔄 Detalhes dos veículos:');
+          window.veiculos.forEach((veiculo, index) => {
+            console.log(`  ${index}: value="${veiculo.value}" label="${veiculo.label}"`);
+          });
+          
+          // Verificar se há veículos com GARAGEM ou CARGA/DESCARGA
+          const veiculosEspeciais = window.veiculos.filter(v => 
+            v.label && (v.label.toUpperCase().includes('GARAGEM') || 
+                       v.label.toUpperCase().includes('CARGA/DESCARGA'))
+          );
+          console.log('🔄 Veículos especiais:', veiculosEspeciais);
+        } else {
+          console.log('❌ Nenhum veículo carregado');
+          
+          // Tentar recarregar dados
+          console.log('🔄 Tentando recarregar dados...');
+          try {
+            const jinja2Data = document.getElementById('jinja2-data');
+            if (jinja2Data) {
+              const trucksData = jinja2Data.getAttribute('data-trucks');
+              console.log('🔄 Dados brutos de veículos:', trucksData);
+              
+              if (trucksData && trucksData.trim() !== '[]') {
+                window.veiculos = JSON.parse(trucksData);
+                console.log('✅ Veículos recarregados:', window.veiculos.length);
+              } else {
+                console.log('❌ Dados de veículos vazios no HTML');
+              }
+            }
+          } catch (error) {
+            console.error('❌ Erro ao recarregar veículos:', error);
+          }
+        }
+        
+        // Verificar campo de placa
+        const placaField = document.getElementById('modal_placa_veiculo');
+        if (placaField) {
+          console.log('🔄 Campo de placa encontrado:', placaField);
+          console.log('🔄 Campo visível:', placaField.offsetParent !== null);
+          console.log('🔄 Campo habilitado:', !placaField.disabled);
+        } else {
+          console.error('❌ Campo de placa não encontrado');
+        }
+      };
+      
+      // Inicializar autocomplete para o modal quando ele abrir
+      window.initializeModalAutocomplete = function() {
+      console.log('=== INICIALIZANDO AUTOCOMPLETE DO MODAL ===');
+      console.log('🔄 Função chamada em:', new Date().toISOString());
+      console.log('🔄 DOM ready:', document.readyState);
+      
+      // Verificar se a função initAutocomplete está disponível
+      if (typeof initAutocomplete !== 'function') {
+        console.error('❌ Função initAutocomplete não está disponível');
+        return;
+      }
+
+      // Verificar se os dados estão disponíveis
+      console.log('Verificando dados disponíveis:', {
+        motoristas: window.motoristas?.length || 0,
+        veiculos: window.veiculos?.length || 0,
+        criterios: window.criterios?.length || 0
+      });
+
+      if (!window.motoristas || !window.veiculos) {
+        console.error('❌ Dados de autocomplete não estão disponíveis');
+        console.log('Tentando carregar dados novamente...');
+        
+        // Tentar carregar dados novamente
+        try {
+          const jinja2Data = document.getElementById('jinja2-data');
+          if (jinja2Data) {
+            const motoristsData = jinja2Data.getAttribute('data-motorists');
+            const trucksData = jinja2Data.getAttribute('data-trucks');
+            
+            if (motoristsData) {
+              window.motoristas = JSON.parse(motoristsData);
+              console.log('✅ Motoristas recarregados:', window.motoristas.length);
+            }
+            
+            if (trucksData) {
+              window.veiculos = JSON.parse(trucksData);
+              console.log('✅ Veículos recarregados:', window.veiculos.length);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Erro ao recarregar dados:', error);
+          return;
+        }
+      }
+
+      // Aguardar um pouco para garantir que o DOM está pronto
+      setTimeout(() => {
+        try {
+          // Verificar se os campos existem no DOM
+          const motoristField = document.getElementById('modal_motorist_search');
+          const vehicleField = document.getElementById('modal_placa_veiculo');
+          
+          if (!motoristField || !vehicleField) {
+            console.error('❌ Campos de autocomplete não encontrados no DOM');
+            return;
+          }
+
+          console.log('✅ Campos encontrados, inicializando autocomplete...');
+
+          // Inicializar autocomplete para motoristas
+          const autocompleteMotorista = initAutocomplete('modal_motorist_search', {
+            data: window.motoristas,
+            placeholder: 'Digite o nome do motorista...',
+            onSelect: function(item) {
+              console.log('✅ Motorista selecionado:', item);
+              document.getElementById('modal_motorist_id').value = item.value;
+            }
+          });
+
+          // Inicializar autocomplete para veículos
+          console.log('🔄 Inicializando autocomplete para veículos com dados:', window.veiculos);
+          console.log('🔄 Tipo de dados:', typeof window.veiculos);
+          console.log('🔄 É array?', Array.isArray(window.veiculos));
+          console.log('🔄 Primeiros 3 veículos:', window.veiculos?.slice(0, 3));
+          
+          if (window.veiculos && window.veiculos.length > 0) {
+            const autocompleteVeiculo = initAutocomplete('modal_placa_veiculo', {
+              data: window.veiculos,
+              placeholder: 'Digite a placa do veículo...',
+              onSelect: function(item) {
+                console.log('✅ Veículo selecionado:', item);
+                // Salvar a PLACA (label) em vez do ID (value)
+                document.getElementById('modal_truck_id').value = item.label;
+              }
+            });
+            console.log('✅ Autocomplete veículo criado:', autocompleteVeiculo);
+          } else {
+            console.warn('⚠️ Nenhum veículo disponível para autocomplete');
+          }
+
+          console.log('✅ Autocomplete do modal inicializado com sucesso');
+          console.log('✅ Autocomplete motorista:', autocompleteMotorista);
+          console.log('✅ Autocomplete veículo:', autocompleteVeiculo);
+          
+          // Configurar campos condicionais após autocomplete estar pronto
+          console.log('🔄 Configurando campos condicionais...');
+          const motivoSelect = $("#modal_motivo");
+          if (motivoSelect.length > 0) {
+            console.log('✅ Campo motivo encontrado, configurando campos condicionais...');
+            
+            // Verificar se já tem um valor selecionado
+            const valorAtual = motivoSelect.val();
+            if (valorAtual) {
+              const motivo = valorAtual.toUpperCase();
+              console.log('🔄 Valor atual do motivo:', motivo);
+              
+              if (motivo && (motivo.includes("GARAGEM") || motivo.includes("CARGA/DESCARGA"))) {
+                console.log('✅ Mostrando campos de GARAGEM/CARGA-DESCARGA (valor atual)');
+                $("#modal_garagem-fields").show();
+                $("#modal_inicio_jornada, #modal_fim_jornada").prop("required", true);
+                $("#modal_inicio_refeicao, #modal_fim_refeicao").prop("required", false);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('❌ Erro ao inicializar autocomplete do modal:', error);
+        }
+      }, 100);
+    }
+
+      // Função para inicializar autocomplete dos campos de análise
+      function initializeAnalysisAutocomplete() {
+        // Preparar dados para o autocomplete (mesma estrutura da tela original)
+        const caminhoes = window.veiculos || [];
+        const motoristas = window.motoristas || [];
+
+        // Debug: verificar dados recebidos
+        console.log('Dados de caminhões:', caminhoes);
+        console.log('Dados de motoristas:', motoristas);
+        
+        // Verificar se os dados estão vazios
+        if (caminhoes.length === 0) {
+          console.warn('Nenhum caminhão encontrado para autocomplete');
+        }
+        if (motoristas.length === 0) {
+          console.warn('Nenhum motorista encontrado para autocomplete');
+        }
+        
+        // Verificar estrutura dos dados
+        console.log('Estrutura dos dados de caminhões:', caminhoes);
+        console.log('Estrutura dos dados de motoristas:', motoristas);
+
+        // Inicializar os componentes de autocomplete (mesma configuração da tela original)
+        if (typeof initAutocomplete === 'function') {
+          // Autocomplete para placas
+          const autocompletePlaca = initAutocomplete('truck_search', {
+            data: caminhoes,
+            placeholder: 'Digite a placa...',
+            onSelect: function(item) {
+              document.getElementById('truck_id').value = item.value;
+              console.log('Placa selecionada:', item);
+            }
+          });
+
+          // Autocomplete para motoristas
+          const autocompleteMotorista = initAutocomplete('motorist_search', {
+            data: motoristas,
+            placeholder: 'Digite o nome do motorista...',
+            onSelect: function(item) {
+              document.getElementById('motorist_id').value = item.value;
+              console.log('Motorista selecionado:', item);
+            }
+          });
+        } else {
+          console.error('Função initAutocomplete não está disponível');
+        }
+      }
+
+      // Função para inicializar filtro dinâmico
+      function initializeDynamicFilter() {
+        const filterInput = document.getElementById('filter_motorist');
+        if (filterInput) {
+          // Implementar filtro em tempo real
+          filterInput.addEventListener('input', function(e) {
+            const filterValue = e.target.value.toLowerCase();
+            filterTableRows(filterValue);
+          });
+        }
+      }
+
+      // Função para filtrar linhas da tabela
+      function filterTableRows(filterValue) {
+        const tableRows = document.querySelectorAll('.shared-table tbody tr');
+        
+        tableRows.forEach(row => {
+          const motoristName = row.querySelector('td:first-child').textContent.toLowerCase();
+          
+          if (motoristName.includes(filterValue)) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      }
+
+      // Função para limpar filtro
+      function clearFilter() {
+        const filterInput = document.getElementById('filter_motorist');
+        if (filterInput) {
+          filterInput.value = '';
+        }
+        
+        // Mostrar todas as linhas da tabela
+        const tableRows = document.querySelectorAll('.shared-table tbody tr');
+        tableRows.forEach(row => {
+          row.style.display = '';
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,222 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RPZ</title>
+
+    <!-- Links e Scripts necessários -->
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/content.css') }}"
+    />
+    
+    <!-- Inclui o componente de autocomplete -->
+    {% include 'partials/autocomplete.html' %}
+    
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* Estilos profissionais para o botão de análise */
+        .btn-analise-fechamento {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-analise-fechamento:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        
+        .btn-analise-fechamento:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-analise-fechamento i {
+            font-size: 18px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Melhorias no container do formulário */
+        .form-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e1e5e9;
+        }
+        
+        /* Estilos para os campos de entrada */
+        .form-grupo {
+            margin-bottom: 25px;
+        }
+        
+        .form-grupo label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background-color: #f8f9fa;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background-color: white;
+        }
+        
+        /* Título da página */
+        .content h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        /* Loader de progresso */
+        .loader {
+          border: 8px solid #f3f3f3;
+          border-top: 8px solid #667eea;
+          border-radius: 50%;
+          width: 60px;
+          height: 60px;
+          animation: spin 1s linear infinite;
+          margin: 0 auto;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg);}
+          100% { transform: rotate(360deg);}
+        }
+    </style>
+  </head>
+
+  <body>
+    <div id="progress-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.85); z-index:9999; align-items:center; justify-content:center;">
+      <div style="text-align:center;">
+        <div class="loader"></div>
+        <p style="margin-top:20px; font-size:18px; color:#333;">Analisando dados, aguarde...</p>
+      </div>
+    </div>
+    <div class="content">
+      <h1>📊 Análise de Ponto - Fechamento</h1>
+      <div class="form-container">
+        <form
+          method="GET"
+          action="/closure_analysis"
+          onsubmit="return mostrarProgresso()"
+          id="jornadaForm"
+          autocomplete="off"
+        >
+          <div style="display: flex; justify-content: center; margin-bottom: 30px">
+            <button id="btn-iniciar-analise" type="submit" class="btn-analise-fechamento">
+              <i class="fas fa-chart-line"></i> Iniciar Análise de Ponto
+            </button>
+          </div>
+          <div class="form-grupo">
+            <label for="truck_search">PLACA</label>
+            <input type="hidden" name="truck_id" id="truck_id">
+            <input type="text" id="truck_search" class="form-control" required autocomplete="off">
+          </div>
+
+          <div class="form-grupo">
+            <label for="motorist_search">MOTORISTA</label>
+            <input type="hidden" name="motorist_id" id="motorist_id">
+            <input type="text" id="motorist_search" class="form-control" required autocomplete="off">
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Preparar dados para o autocomplete
+      const caminhoes = [
+        {% for truck in trucks %}
+        {
+          value: "{{ truck[0] }}",
+          label: "{{ truck[1] }}"
+        },
+        {% endfor %}
+      ];
+
+      const motoristas = [
+        {% for motorist in motorists %}
+        {
+          value: "{{ motorist[0] }}",
+          label: "{{ motorist[1] }}"
+        },
+        {% endfor %}
+      ];
+
+
+      // Inicializar os componentes de autocomplete
+      document.addEventListener('DOMContentLoaded', function() {
+        // Autocomplete para placas
+        const autocompletePlaca = initAutocomplete('truck_search', {
+          data: caminhoes,
+          placeholder: 'Digite a placa...',
+          onSelect: function(item) {
+            document.getElementById('truck_id').value = item.value;
+          }
+        });
+
+        // Autocomplete para motoristas
+        const autocompleteMotorista = initAutocomplete('motorist_search', {
+          data: motoristas,
+          placeholder: 'Digite o nome do motorista...',
+          onSelect: function(item) {
+            document.getElementById('motorist_id').value = item.value;
+          }
+        });
+      });
+
+      function mostrarProgresso() {
+        const placa = document.getElementById("truck_id").value.trim();
+        const motorista = document.getElementById("motorist_id").value.trim();
+        if (!placa || !motorista) {
+          alert("❗ Preencha os campos obrigatórios: PLACA e MOTORISTA.");
+          return false;
+        }
+        document.getElementById('progress-overlay').style.display = 'flex';
+        return true;
+      }
+    </script>
+  </body>
+</html>

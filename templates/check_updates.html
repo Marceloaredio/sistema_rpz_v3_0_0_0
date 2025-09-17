@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RPZ - Conferir Atualização</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared_tables.css') }}" />
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+
+    <!-- Inclui o componente de progresso -->
+    {% include 'partials/progress_bar.html' %}
+  </head>
+  <body>
+    <div class="content">
+      <h2 class="mb-4">Conferir Atualização de Jornadas</h2>
+
+      <table class="shared-table">
+        <thead>
+          <tr>
+            <th>Motorista</th>
+            <th>Data da Última Atualização</th>
+            <th>Status</th>
+            <th>Obs</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for motorist in motorists %}
+          <tr data-motorist-id="{{ motorist.id }}">
+            <td>{{ motorist.name }}</td>
+            <td class="last-update-date">Carregando...</td>
+            <td class="status">Carregando...</td>
+            <td class="obs">Carregando...</td>
+            <td>
+              <i class="fas fa-search shared-icon view-details" title="Ver Detalhes"></i>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include 'partials/motorist_details_modal.html' %}
+
+    <script>
+      $(document).ready(function () {
+        console.log("Página Conferir Atualização carregada.");
+        fetchUpdateData();
+
+        // Variáveis para paginação
+        let currentPage = 1;
+        const rowsPerPage = 10;
+        let currentMotoristId = null;
+        let currentMotoristName = null;
+        let hasDeletedData = false; // Variável para controlar se houve exclusão
+
+        // Função para buscar dados da API e popular a tabela
+        function fetchUpdateData() {
+          progressManager.startOperation('Verificando Atualizações', 'Buscando status dos motoristas...');
+
+          $.ajax({
+            url: "/api/check_motorist_updates",
+            method: "GET",
+            dataType: "json",
+            success: function (data) {
+              console.log("Dados da API recebidos:", data);
+              progressManager.updateProgress(50, 'Atualizando informações...');
+              
+              data.forEach(function (motorist_data, index) {
+                var $row = $('tr[data-motorist-id="' + motorist_data.id + '"]');
+                if ($row.length) {
+                  $row.find(".last-update-date").text(motorist_data.last_update);
+                  
+                  var $statusCell = $row.find(".status");
+                  $statusCell.text(motorist_data.status);
+                  $statusCell
+                    .removeClass("status-atualizado status-atrasado sem-registros")
+                    .addClass(motorist_data.status_class);
+                  
+                  var $obsCell = $row.find(".obs");
+                  $obsCell.text(motorist_data.obs);
+                  $obsCell
+                    .removeClass("obs-completo obs-faltante sem-registros")
+                    .addClass(motorist_data.obs_class);
+                }
+                
+                // Atualiza o progresso baseado no número de motoristas processados
+                const progress = Math.min(90, 50 + Math.floor((index + 1) / data.length * 40));
+                progressManager.updateProgress(progress, 'Atualizando informações...');
+              });
+              
+              progressManager.finishOperation();
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+              console.error("Erro ao buscar dados da API:", textStatus, errorThrown);
+              progressManager.finishOperation(() => {
+                $(".shared-table tbody").html(
+                  '<tr><td colspan="5">Erro ao carregar dados. Tente novamente.</td></tr>'
+                );
+              });
+            },
+          });
+        }
+
+        // Função para buscar detalhes do motorista
+        function fetchMotoristDetails(motoristId) {
+          const today = new Date();
+          const fortyDaysAgo = new Date(today);
+          fortyDaysAgo.setDate(today.getDate() - 40);
+
+          progressManager.startOperation('Carregando Detalhes', 'Buscando informações do motorista...');
+
+          $.ajax({
+            url: "/api/get-motorist-details",
+            method: "GET",
+            data: {
+              motorist_id: motoristId,
+              from_date: fortyDaysAgo.toISOString().split('T')[0],
+              to_date: today.toISOString().split('T')[0]
+            },
+            success: function(data) {
+              progressManager.updateProgress(50, 'Processando dados...');
+              populateDetailsTable(data);
+              progressManager.updateProgress(80, 'Organizando visualização...');
+              showPage(1);
+              progressManager.finishOperation();
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+              console.error("Erro ao buscar detalhes:", textStatus, errorThrown);
+              progressManager.finishOperation(() => {
+                alert("Erro ao carregar detalhes do motorista.");
+              });
+            }
+          });
+        }
+
+        // Função para popular a tabela de detalhes
+        function populateDetailsTable(data) {
+          const tbody = $("#detailsTableBody");
+          tbody.empty();
+
+          data.forEach(function(row) {
+            const tr = $("<tr>");
+            tr.append(`<td><input type="checkbox" class="shared-checkbox row-select" data-date="${row.data}"></td>`);
+            tr.append(`<td>${row.placa || ''}</td>`);
+            tr.append(`<td>${row.data || ''}</td>`);
+            tr.append(`<td>${row.dia_da_semana || ''}</td>`);
+            tr.append(`<td>${row.inicio_jornada || ''}</td>`);
+            tr.append(`<td>${row.in_refeicao || ''}</td>`);
+            tr.append(`<td>${row.fim_refeicao || ''}</td>`);
+            tr.append(`<td>${row.fim_jornada || ''}</td>`);
+            tr.append(`<td>${row.observacao || ''}</td>`);
+            tr.append(`<td>${row.tempo_refeicao || ''}</td>`);
+            tr.append(`<td>${row.intersticio || ''}</td>`);
+            tr.append(`<td>${row.tempo_intervalo || ''}</td>`);
+            tr.append(`<td>${row.tempo_carga_descarga || ''}</td>`);
+            tr.append(`<td>${row.jornada_total || ''}</td>`);
+            tr.append(`<td>${row.tempo_direcao || ''}</td>`);
+            tr.append(`<td>${row.direcao_sem_pausa || ''}</td>`);
+            tr.append(`<td>${row.desc_infracao || ''}</td>`);
+            tbody.append(tr);
+          });
+        }
+
+        // Função para mostrar página específica
+        function showPage(page) {
+          const rows = $("#detailsTableBody tr");
+          const totalRows = rows.length;
+          const start = (page - 1) * rowsPerPage;
+          const end = page * rowsPerPage;
+
+          rows.hide();
+          rows.slice(start, end).show();
+
+          $("#prevButton").prop("disabled", page === 1);
+          $("#nextButton").prop("disabled", end >= totalRows);
+          
+          currentPage = page;
+        }
+
+        // Event Handlers
+        $(".view-details").click(function() {
+          const row = $(this).closest("tr");
+          currentMotoristId = row.data("motorist-id");
+          currentMotoristName = row.find("td:first").text();
+          $("#motoristName").text(currentMotoristName);
+          
+          fetchMotoristDetails(currentMotoristId);
+          $("#detailsModal").show();
+          hasDeletedData = false; // Reseta o controle de exclusão ao abrir o modal
+        });
+
+        $(".modal-close, .shared-modal-close").click(function() {
+          if (hasDeletedData) {
+            // Se houve exclusão, recarrega a página
+            window.location.reload();
+          } else {
+            // Se não houve exclusão, apenas fecha o modal
+            $("#detailsModal").hide();
+          }
+        });
+
+        $("#prevButton").click(function() {
+          if (currentPage > 1) {
+            showPage(currentPage - 1);
+          }
+        });
+
+        $("#nextButton").click(function() {
+          const totalRows = $("#detailsTableBody tr").length;
+          if (currentPage * rowsPerPage < totalRows) {
+            showPage(currentPage + 1);
+          }
+        });
+
+        $("#selectAll").change(function() {
+          const isChecked = $(this).prop("checked");
+          $("#detailsTableBody .row-select:visible").prop("checked", isChecked);
+        });
+
+        $("#deleteSelected").click(function() {
+          const selectedDates = [];
+          $("#detailsTableBody .row-select:checked").each(function() {
+            selectedDates.push($(this).data("date"));
+          });
+
+          if (selectedDates.length === 0) {
+            alert("Por favor, selecione pelo menos uma data para excluir.");
+            return;
+          }
+
+          if (confirm("Tem certeza que deseja excluir os registros selecionados?")) {
+            progressManager.startOperation('Excluindo Registros', 'Iniciando exclusão...');
+
+            $.ajax({
+              url: "/api/delete-motorist-records",
+              method: "POST",
+              contentType: "application/json",
+              data: JSON.stringify({
+                motorist_id: currentMotoristId,
+                dates: selectedDates
+              }),
+              success: function(response) {
+                progressManager.updateProgress(50, 'Atualizando registros...');
+                hasDeletedData = true; // Marca que houve exclusão
+                fetchMotoristDetails(currentMotoristId);
+                progressManager.finishOperation(() => {
+                  alert("Registros excluídos com sucesso!");
+                });
+              },
+              error: function(jqXHR, textStatus, errorThrown) {
+                progressManager.finishOperation(() => {
+                  console.error("Erro ao excluir registros:", textStatus, errorThrown);
+                  alert("Erro ao excluir registros. Tente novamente.");
+                });
+              }
+            });
+          }
+        });
+
+        // Fecha o modal se clicar fora dele
+        $(window).click(function(event) {
+          if ($(event.target).hasClass("shared-modal")) {
+            if (hasDeletedData) {
+              // Se houve exclusão, recarrega a página
+              window.location.reload();
+            } else {
+              // Se não houve exclusão, apenas fecha o modal
+              $("#detailsModal").hide();
+            }
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

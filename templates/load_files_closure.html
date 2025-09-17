@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload de arquivos</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}">
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <!-- Adiciona SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Inclui o componente de progresso -->
+    {% include 'partials/progress_bar.html' %}
+
+    <!-- Inclui o componente de autocomplete -->
+    {% include 'partials/autocomplete.html' %}
+
+    <style>
+        body {
+            font-family: "Times New Roman";
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .content {
+            max-width: 60%;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f7f7f7;
+            box-sizing: border-box; /* Garante que o padding e borda sejam incluídos na largura total */
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #2C3E50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .remove-btn {
+            background-color: transparent;
+            color: #555;
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            padding: 0;
+            background: none;
+        }
+
+        .remove-btn:hover {
+            background-color: #d5d5d5;
+            color: #333; /* Cor um pouco mais escura quando passa o mouse */
+        }
+
+        .file-input {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            position: relative;
+            background-color: #f9f9f9;
+            box-sizing: border-box; /* Garante que padding e borda não ultrapassem a largura */
+            width: 100%; /* Garante que ocupe toda a largura disponível */
+            max-width: 100%; /* Garante que não ultrapasse a largura da div */
+        }
+
+        #file-container {
+            margin-bottom: 20px;
+        }
+
+        .file-input:not(:last-child) {
+            margin-bottom: 20px; /* Espaçamento entre as divs */
+        }
+
+        .file-input hr {
+            border: 1px solid #ddd;
+            margin-top: 20px;
+        }
+
+        .flash-message {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .flash-message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .flash-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Estilos para o botão de limpar rastreadores */
+        .clear-button {
+            background-color: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .clear-button:hover {
+            background-color: #c82333;
+        }
+
+        /* Estilos para o modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            margin: 0 10px;
+            padding: 8px 20px;
+        }
+
+        .btn-confirm {
+            background-color: #dc3545;
+        }
+
+        .btn-cancel {
+            background-color: #6c757d;
+        }
+
+        .btn-confirm:hover {
+            background-color: #c82333;
+        }
+
+        .btn-cancel:hover {
+            background-color: #5a6268;
+        }
+    </style>
+
+    <script>
+        // Dados para o autocomplete
+        const caminhoes = [
+            {% for i in range(plates|length) %}
+            {
+                value: "{{ trucks_ids[i] }}",
+                label: "{{ plates[i] }}"
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        // Função para adicionar novo input de arquivo
+        function addFileInput() {
+            const fileInputs = document.querySelectorAll('.file-input');
+            const newIndex = fileInputs.length;
+            
+            const newInput = document.createElement('div');
+            newInput.classList.add('file-input');
+            
+            const inputHtml = `
+                <div class="form-group">
+                    <label for="file-${newIndex}">Escolha o arquivo:</label>
+                    <input type="file" name="file" id="file-${newIndex}" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="tracker-type-${newIndex}">Tipo de Rastreador:</label>
+                    <select name="tracker_type" id="tracker-type-${newIndex}" class="form-control" required>
+                        <option value="" disabled selected>Selecione o tipo de rastreador</option>
+                        <option value="positron">Positron</option>
+                        <option value="sasgc">SASGC</option>
+                        <option value="sascar">SASCAR</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="truck-search-${newIndex}">Placa:</label>
+                    <input type="hidden" name="truck_id" id="truck-id-${newIndex}">
+                    <input type="text" id="truck-search-${newIndex}" class="form-control" required>
+                </div>
+                ${newIndex > 0 ? '<button type="button" class="remove-btn" onclick="removeFileInput(this)">x</button>' : ''}
+                <hr>
+            `;
+            
+            newInput.innerHTML = inputHtml;
+            document.getElementById('file-inputs-container').appendChild(newInput);
+
+            // Inicializar o autocomplete
+            initAutocomplete(`truck-search-${newIndex}`, {
+                data: caminhoes,
+                placeholder: 'Digite a placa...',
+                onSelect: function(item) {
+                    document.getElementById(`truck-id-${newIndex}`).value = item.value;
+                }
+            });
+
+            // Adicionar event listener para o select
+            const select = newInput.querySelector(`select[id="tracker-type-${newIndex}"]`);
+            select.addEventListener('change', function() {
+                togglePlacaField(this);
+            });
+        }
+
+        // Função para remover input de arquivo
+        function removeFileInput(button) {
+            button.closest('.file-input').remove();
+        }
+
+        // Função para mostrar/ocultar campo de placa
+        function togglePlacaField(selectElem) {
+            const container = selectElem.closest('.file-input');
+            const placaInput = container.querySelector('input[type="text"]');
+            const placaHidden = container.querySelector('input[type="hidden"]');
+            
+            if (selectElem.value === 'sascar') {
+                placaInput.parentElement.style.display = 'none';
+                placaInput.required = false;
+                placaHidden.required = false;
+            } else {
+                placaInput.parentElement.style.display = 'block';
+                placaInput.required = true;
+                placaHidden.required = true;
+            }
+        }
+
+        // Função para processar o upload dos arquivos
+        async function processUpload(formData) {
+            const files = formData.getAll('file');
+            const totalFiles = files.length;
+            let processedFiles = 0;
+            const results = {
+                success: [],
+                error: []
+            };
+
+            progressManager.startOperation('Upload de Arquivos', 'Iniciando upload...');
+
+            for (let i = 0; i < totalFiles; i++) {
+                const file = files[i];
+                const fileFormData = new FormData();
+                
+                fileFormData.append('file', file);
+                fileFormData.append('tracker_type', formData.getAll('tracker_type')[i]);
+                fileFormData.append('truck_id', formData.getAll('truck_id')[i]);
+
+                try {
+                    const response = await fetch('{{ url_for("fechamento.upload_closure") }}', {
+                        method: 'POST',
+                        body: fileFormData
+                    });
+
+                    const result = await response.json();
+                    
+                    if (response.ok && result.status === 'success') {
+                        results.success.push({
+                            name: file.name,
+                            message: result.message
+                        });
+                    } else {
+                        results.error.push({
+                            name: file.name,
+                            message: result.message || 'Erro desconhecido'
+                        });
+                    }
+
+                    processedFiles++;
+                    const progress = Math.round((processedFiles / totalFiles) * 100);
+                    progressManager.updateProgress(progress, `Processando arquivo ${processedFiles}/${totalFiles}: ${file.name}`);
+
+                } catch (error) {
+                    results.error.push({
+                        name: file.name,
+                        message: 'Erro de conexão'
+                    });
+                    processedFiles++;
+                    const progress = Math.round((processedFiles / totalFiles) * 100);
+                    progressManager.updateProgress(progress, `Processando arquivo ${processedFiles}/${totalFiles}: ${file.name}`);
+                }
+            }
+
+            // Garante que a barra chegue a 100% antes de finalizar
+            progressManager.updateProgress(100, 'Finalizado!');
+            return results;
+        }
+
+        // Inicializar o formulário ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('file-inputs-container');
+            container.innerHTML = '';
+            addFileInput();
+
+            // Interceptar o envio do formulário
+            const form = document.getElementById('upload-form');
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const results = await processUpload(formData);
+
+                progressManager.finishOperation(() => {
+                    let message = '';
+                    
+                    if (results.success.length > 0) {
+                        message += '<strong>Arquivos processados com sucesso:</strong><br>';
+                        results.success.forEach(file => {
+                            message += `✓ ${file.name}<br>`;
+                        });
+                    }
+                    
+                    if (results.error.length > 0) {
+                        if (message) message += '<br>';
+                        message += '<strong>Arquivos com erro:</strong><br>';
+                        results.error.forEach(file => {
+                            message += `❌ ${file.name}: ${file.message}<br>`;
+                        });
+                    }
+
+                    Swal.fire({
+                        title: results.error.length === 0 ? 'Sucesso!' : 'Processamento Concluído',
+                        html: message,
+                        icon: results.error.length === 0 ? 'success' : 'warning',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#2C3E50'
+                    }).then((result) => {
+                        if (result.isConfirmed && results.error.length === 0) {
+                            window.location.reload();
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="content">
+        <h1>Carregar Rastreadores do Fechamento de Ponto</h1>
+
+        <form id="upload-form" action="{{ url_for('fechamento.upload_closure') }}" method="POST" enctype="multipart/form-data" autocomplete="off">
+            <div id="file-inputs-container">
+                <!-- Os inputs de arquivo serão adicionados aqui -->
+            </div>
+            <div class="button-group">
+                <button type="button" class="add-file-btn" onclick="addFileInput()">+ Adicionar Arquivo</button>
+                <button type="submit" class="submit-btn">Enviar Arquivos</button>
+            </div>
+        </form>
+
+
+
+        <!-- Formulário para limpar dados dos rastreadores -->
+        <form id="clearForm" action="{{ url_for('fechamento.closure_clear_vehicle_data') }}" method="POST" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;" autocomplete="off">
+            <h3 style="color: #dc3545; margin-bottom: 15px;">⚠️ Cuidado</h3>
+            <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
+                Esta ação irá apagar <strong>TODOS</strong> os dados de rastreadores <b>do módulo de Fechamento de Ponto</b>.<br>
+                Esta operação é irreversível!
+            </p>
+            <button type="button" class="clear-button" onclick="showModal()">
+                🗑️ Limpar Todos os Dados do Fechamento de Ponto
+            </button>
+        </form>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h2>Confirmação</h2>
+            <p>Você tem certeza que deseja limpar todos os dados dos rastreadores?</p>
+            <div class="modal-buttons">
+                <button class="btn-confirm" onclick="confirmClear()">Sim</button>
+                <button class="btn-cancel" onclick="hideModal()">Não</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Funções para o modal de confirmação
+        function showModal() {
+            Swal.fire({
+                title: 'Confirmação',
+                text: 'Você tem certeza que deseja limpar todos os dados dos rastreadores?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sim',
+                cancelButtonText: 'Não',
+                customClass: {
+                    popup: 'animated fadeInDown'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    confirmClear();
+                }
+            });
+        }
+
+        function hideModal() {
+            document.getElementById('confirmModal').style.display = 'none';
+        }
+
+        function confirmClear() {
+            progressManager.startOperation('Limpando Dados', 'Iniciando limpeza dos rastreadores...');
+
+            fetch(document.getElementById('clearForm').action, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao limpar dados');
+                }
+                return response.json();
+            })
+            .then(data => {
+                progressManager.finishOperation(() => {
+                    Swal.fire({
+                        title: 'Sucesso!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#2C3E50',
+                        customClass: {
+                            popup: 'animated fadeInDown'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.reload();
+                        }
+                    });
+                });
+            })
+            .catch(error => {
+                progressManager.finishOperation(() => {
+                    Swal.fire({
+                        title: 'Erro',
+                        text: error.message || 'Erro ao limpar dados dos rastreadores',
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#dc3545',
+                        customClass: {
+                            popup: 'animated fadeInDown'
+                        }
+                    });
+                });
+            });
+        }
+
+
+    </script>
+</body>
+</html>

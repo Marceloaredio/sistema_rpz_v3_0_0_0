@@ -1,0 +1,59 @@
+# ========================================
+# ARQUIVOS DE DESENVOLVIMENTO
+# ========================================
+dbs/
+logs/
+env/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# ========================================
+# ARQUIVOS DE BACKUP E LOGS
+# ========================================
+backups/
+logs/*.log
+*.log
+
+# ========================================
+# ARQUIVOS DE CONFIGURAÇÃO SENSÍVEIS
+# ========================================
+.env
+config/google_credentials.json
+credentials/
+*.key
+*.pem
+
+# ========================================
+# ARQUIVOS DE IDE E EDITORES
+# ========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# ========================================
+# ARQUIVOS DO SISTEMA OPERACIONAL
+# ========================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========================================
+# ARQUIVOS TEMPORÁRIOS
+# ========================================
+*.tmp
+*.temp
+temp/
+tmp/
+
+# ========================================
+# ARQUIVOS DE DEPLOY
+# ========================================
+Procfile
+.env.local

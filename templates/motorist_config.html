@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Motoristas Ativos</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/motorists.css') }}"/>
+    
+    <script src="{{ url_for('static', filename='js/motorist-form.js') }}" defer></script>
+
+</head>
+<body>
+<div class="content">
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}" style="padding: 10px; margin: 10px 0; border-radius: 5px; 
+                     {% if category == 'success' %}
+                         background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+                     {% elif category == 'error' %}
+                         background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
+                     {% else %}
+                         background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;
+                     {% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Cabeçalho da página -->
+    <div class="page-header">
+        <h1 class="page-title">Motoristas Ativos</h1>
+        <a href="#" class="btn-novo-motorista">Novo Motorista</a>
+    </div>
+
+    <!-- Cards de resumo por operação -->
+    <div class="summary-cards">
+        <!-- Card destacado com total de motoristas -->
+        <div class="summary-card total-card" data-filter="total" onclick="filterByOperation('total')">
+            <h3>Total de Motoristas</h3>
+            <p class="count">{{ motorists|length }}</p>
+        </div>
+        
+        {% for operacao, count in operacoes_summary %}
+        <div class="summary-card" data-filter="{{ operacao }}" onclick="filterByOperation('{{ operacao }}')">
+            <h3>Operação {{ operacao }}</h3>
+            <p class="count">{{ count }}</p>
+        </div>
+        {% endfor %}
+        {% if not operacoes_summary %}
+        <div class="summary-card">
+            <h3>Nenhuma operação encontrada</h3>
+            <p class="count">0</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Filtros de busca -->
+    <div class="filters-container">
+        <div class="filters-title">Filtros de Busca</div>
+        <div class="filters-row">
+            <div class="filter-group">
+                <label class="filter-label">Nome do Motorista</label>
+                <input type="text" class="filter-input" id="filter-nome" placeholder="Digite o nome do motorista..." autocomplete="off">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">CPF</label>
+                <input type="text" class="filter-input" id="filter-cpf" placeholder="Digite o CPF..." autocomplete="off">
+            </div>
+        </div>
+    </div>
+
+    <!-- Container da tabela -->
+    <div class="table-container">
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Motorista</th>
+                        <th>CPF</th>
+                        <th>CNH</th>
+                        <th>Operação Principal</th>
+                        <th>Empresa</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+        {% for motorist in motorists %}
+        <tr>
+            <td>{{ motorist.nome }}</td>
+            <td>{{ motorist.cpf }}</td>
+            <td>{{ motorist.cnh }}</td>
+            <td>{{ motorist.operacao }}</td>
+            <td>{{ motorist.empresa or 'N/A' }}</td>
+            <td>
+                <span class="status-cell status-{{ motorist.status_type }}">
+                    {{ motorist.status_text }}
+                </span>
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-detalhes" onclick="verDetalhes({{ motorist.id }})" data-tooltip="Ver Detalhes"></button>
+                    <button class="btn-excluir" onclick="excluirMotorista({{ motorist.id }})" data-tooltip="Excluir Motorista"></button>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+                </tbody>
+    </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Cadastro de Motorista -->
+<div id="modal-novo-motorista" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Cadastro de Novo Motorista</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        
+        <form id="form-novo-motorista" class="motorist-form" action="/motorists" method="POST">
+            <!-- Seção 1: Informações Pessoais -->
+            <div class="form-section">
+                <h3>Informações Pessoais</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nome" class="required">Nome Completo</label>
+                        <input type="text" id="nome" name="nome" required maxlength="100" placeholder="Digite o nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="data_admissao" class="required">Data de Admissão</label>
+                        <input type="text" id="data_admissao" name="data_admissao" required placeholder="dd/mm/aaaa" maxlength="10">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cpf" class="required">CPF</label>
+                        <input type="text" id="cpf" name="cpf" required placeholder="000.000.000-00" maxlength="14">
+                    </div>
+                    <div class="form-group">
+                        <label for="cnh" class="required">CNH</label>
+                        <input type="text" id="cnh" name="cnh" required placeholder="00000000000" maxlength="11">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="rg" class="required">RG</label>
+                        <input type="text" id="rg" name="rg" required placeholder="Digite apenas números">
+                    </div>
+                    <div class="form-group">
+                        <label for="codigo_sap">Código SAP</label>
+                        <input type="text" id="codigo_sap" name="codigo_sap" placeholder="Máximo 9 dígitos" maxlength="9">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="exemplo@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="operacao" class="required">Operação Principal</label>
+                        <select id="operacao" name="operacao" required>
+                            <option value="">Selecione uma operação</option>
+                            <option value="VIBRA">VIBRA</option>
+                            <option value="ALE">ALE</option>
+                            <option value="SADA">SADA</option>
+                            <option value="ESCURO">ESCURO</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Seção 2: Documentos e Dados Profissionais -->
+            <div class="form-section">
+                <h3>Documentos e Dados Profissionais</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ctps" class="required">CTPS</label>
+                        <input type="text" id="ctps" name="ctps" required placeholder="Máximo 10 dígitos" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="serie" class="required">Série</label>
+                        <input type="text" id="serie" name="serie" required placeholder="Digite a série">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="data_nascimento" class="required">Data de Nascimento</label>
+                        <input type="text" id="data_nascimento" name="data_nascimento" required placeholder="dd/mm/aaaa" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="primeira_cnh" class="required">Data Primeira CNH</label>
+                        <input type="text" id="primeira_cnh" name="primeira_cnh" required placeholder="dd/mm/aaaa" maxlength="10">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="data_expedicao" class="required">Data da Expedição CNH</label>
+                        <input type="text" id="data_expedicao" name="data_expedicao" required placeholder="dd/mm/aaaa" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="vencimento_cnh" class="required">Data de Vencimento CNH</label>
+                        <input type="text" id="vencimento_cnh" name="vencimento_cnh" required placeholder="dd/mm/aaaa" maxlength="10" class="vencimento-field">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="done_mopp">Realização do MOPP</label>
+                        <input type="text" id="done_mopp" name="done_mopp" placeholder="dd/mm/aaaa" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="vencimento_mopp">Vencimento do MOPP</label>
+                        <input type="text" id="vencimento_mopp" name="vencimento_mopp" placeholder="dd/mm/aaaa" maxlength="10" class="vencimento-field">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="done_toxicologico_clt">Realização do Toxicológico CLT</label>
+                        <input type="text" id="done_toxicologico_clt" name="done_toxicologico_clt" placeholder="dd/mm/aaaa" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="vencimento_toxicologico_clt">Vencimento do Toxicológico CLT</label>
+                        <input type="text" id="vencimento_toxicologico_clt" name="vencimento_toxicologico_clt" placeholder="dd/mm/aaaa" maxlength="10" class="vencimento-field">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="done_toxicologico_cnh">Realização do Toxicológico CNH</label>
+                        <input type="text" id="done_toxicologico_cnh" name="done_toxicologico_cnh" placeholder="dd/mm/aaaa" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="vencimento_toxicologico_cnh">Vencimento do Toxicológico CNH</label>
+                        <input type="text" id="vencimento_toxicologico_cnh" name="vencimento_toxicologico_cnh" placeholder="dd/mm/aaaa" maxlength="10" class="vencimento-field">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="done_aso_periodico">Realização Aso Periódico</label>
+                        <input type="text" id="done_aso_periodico" name="done_aso_periodico" placeholder="dd/mm/aaaa" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="vencimento_aso_periodico">Vencimento Aso Periódico</label>
+                        <input type="text" id="vencimento_aso_periodico" name="vencimento_aso_periodico" placeholder="dd/mm/aaaa" maxlength="10" class="vencimento-field">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="done_aso_semestral">Realização Aso Semestral</label>
+                        <input type="text" id="done_aso_semestral" name="done_aso_semestral" placeholder="dd/mm/aaaa" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="vencimento_aso_semestral">Vencimento Aso Semestral</label>
+                        <input type="text" id="vencimento_aso_semestral" name="vencimento_aso_semestral" placeholder="dd/mm/aaaa" maxlength="10" class="vencimento-field">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="done_buonny">Realização Cadastro Buonny</label>
+                        <input type="text" id="done_buonny" name="done_buonny" placeholder="dd/mm/aaaa" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="vencimento_buonny">Vencimento Cadastro Buonny</label>
+                        <input type="text" id="vencimento_buonny" name="vencimento_buonny" placeholder="dd/mm/aaaa" maxlength="10" class="vencimento-field">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Seção 3: Contato e Endereço -->
+            <div class="form-section">
+                <h3>Contato e Endereço</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="telefone" class="required">Contato</label>
+                        <input type="text" id="telefone" name="telefone" required placeholder="(00) 00000-0000" maxlength="15">
+                    </div>
+                    <div class="form-group">
+                        <label for="endereco" class="required">Endereço</label>
+                        <input type="text" id="endereco" name="endereco" required placeholder="Digite o endereço completo">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="filiacao" class="required">Filiação</label>
+                        <input type="text" id="filiacao" name="filiacao" required placeholder="Nome dos pais">
+                    </div>
+                    <div class="form-group">
+                        <label for="estado_civil" class="required">Estado Civil</label>
+                        <select id="estado_civil" name="estado_civil" required>
+                            <option value="">Selecione o estado civil</option>
+                            <option value="CASADO">CASADO</option>
+                            <option value="SOLTEIRO">SOLTEIRO</option>
+                            <option value="AMASIADO">AMASIADO</option>
+                            <option value="UNIÃO ESTÁVEL">UNIÃO ESTÁVEL</option>
+                            <option value="DIVORCIADO">DIVORCIADO</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="filhos" class="required">Filhos</label>
+                        <select id="filhos" name="filhos" required>
+                            <option value="">Selecione o número de filhos</option>
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Seção 4: Informações de Cargo -->
+            <div class="form-section">
+                <h3>Informações de Cargo</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cargo" class="required">Cargo</label>
+                        <select id="cargo" name="cargo" required>
+                            <option value="">Selecione o cargo</option>
+                            <option value="MOTORISTA DE CAMINHÃO TRUCK">MOTORISTA DE CAMINHÃO TRUCK</option>
+                            <option value="MOTORISTA DE CARRETA">MOTORISTA DE CARRETA</option>
+                            <option value="MOTORISTA DE BITREM">MOTORISTA DE BITREM</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="empresa" class="required">Empresa</label>
+                        <select id="empresa" name="empresa" required>
+                            <option value="">Selecione a empresa</option>
+                            <option value="JMX TRANSPORTES EIRELI">JMX TRANSPORTES EIRELI</option>
+                            <option value="TRANSPORTES PAZZI LTDA">TRANSPORTES PAZZI LTDA</option>
+                            <option value="RPZ TRANSPORTES LTDA">RPZ TRANSPORTES LTDA</option>
+                            <option value="MEB TRANSPORTES LTDA">MEB TRANSPORTES LTDA</option>
+                            <option value="RAP TRANSPORTES LTDA">RAP TRANSPORTES LTDA</option>
+                            <option value="BETÃO TRANSPORTES E LOCAÇÃO LTDA–ME">BETÃO TRANSPORTES E LOCAÇÃO LTDA–ME</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group checkbox-group">
+                        <label class="required">Verificação</label>
+                        <div class="checkbox-options">
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="conf_jornada" value="1">
+                                <span>Conferência de Jornada</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="conf_fecham" value="1">
+                                <span>Conferência de Fechamento de Ponto</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="status" class="required">Status</label>
+                        <select id="status" name="status" required>
+                            <option value="">Selecione o status</option>
+                            <option value="ATIVO">ATIVO</option>
+                            <option value="INATIVO">INATIVO</option>
+                            <option value="FERIAS">FÉRIAS</option>
+                            <option value="LICENCA">LICENÇA</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+                         <div class="form-actions">
+                 <button type="button" class="btn-clear" onclick="clearForm()">Limpar</button>
+                 <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                 <button type="submit" class="btn-save">Salvar Motorista</button>
+             </div>
+        </form>
+    </div>
+    </div>
+
+    <script>
+    // Funções para as ações dos botões (serão implementadas posteriormente)
+    function verDetalhes(motoristId) {
+        window.location.href = `/motorist_details/${motoristId}`;
+    }
+
+
+
+    function excluirMotorista(motoristId) {
+        if (confirm('Tem certeza que deseja desligar este motorista? Esta ação não pode ser desfeita.')) {
+            // Mostrar indicador de carregamento
+            const button = event.target;
+            const originalContent = button.innerHTML;
+            button.innerHTML = '⏳';
+            button.disabled = true;
+            
+            // Criar FormData para enviar os dados
+            const formData = new FormData();
+            formData.append('motorist_id', motoristId);
+            
+            // Fazer requisição para desligar o motorista
+            fetch('/api/disable_motorist', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mostrar mensagem de sucesso
+                    alert('Motorista desligado com sucesso!');
+                    // Recarregar a página para atualizar a lista
+                    window.location.reload();
+                } else {
+                    // Mostrar mensagem de erro
+                    alert('Erro ao desligar motorista: ' + data.message);
+                    // Restaurar botão
+                    button.innerHTML = originalContent;
+                    button.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+                alert('Erro ao desligar motorista. Tente novamente.');
+                // Restaurar botão
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            });
+        }
+    }
+
+    // Variáveis globais para filtros
+    let currentOperationFilter = null;
+    let currentNameFilter = '';
+    let currentCpfFilter = '';
+
+    // Função para filtrar por operação
+    function filterByOperation(operation) {
+        const cards = document.querySelectorAll('.summary-card[data-filter]');
+        const tableRows = document.querySelectorAll('.data-table tbody tr');
+        
+        // Remover classe ativa de todos os cards
+        cards.forEach(card => card.classList.remove('active'));
+        
+        // Se clicou no mesmo card que já estava ativo, remover filtro
+        if (currentOperationFilter === operation) {
+            currentOperationFilter = null;
+            applyAllFilters();
+            return;
+        }
+        
+        // Ativar o card clicado
+        const activeCard = document.querySelector(`[data-filter="${operation}"]`);
+        if (activeCard) {
+            activeCard.classList.add('active');
+        }
+        
+        currentOperationFilter = operation;
+        applyAllFilters();
+    }
+
+    // Função para aplicar todos os filtros
+    function applyAllFilters() {
+        const tableRows = document.querySelectorAll('.data-table tbody tr');
+        
+        tableRows.forEach(row => {
+            const nomeCell = row.cells[0].textContent.toLowerCase();
+            const cpfCell = row.cells[1].textContent.toLowerCase();
+            const operacaoCell = row.cells[3].textContent; // Coluna da operação
+            
+            // Verificar filtro de nome
+            const nomeMatch = nomeCell.includes(currentNameFilter.toLowerCase());
+            
+            // Verificar filtro de CPF
+            const cpfMatch = cpfCell.includes(currentCpfFilter.toLowerCase());
+            
+            // Verificar filtro de operação
+            let operacaoMatch = true;
+            if (currentOperationFilter && currentOperationFilter !== 'total') {
+                operacaoMatch = operacaoCell === currentOperationFilter;
+            }
+            
+            // Aplicar filtros combinados
+            if (nomeMatch && cpfMatch && operacaoMatch) {
+                row.style.display = '';
+                row.style.opacity = '1';
+            } else {
+                row.style.display = 'none';
+                row.style.opacity = '0.3';
+            }
+        });
+        
+        // Atualizar contadores dos cards
+        updateCardCounters();
+    }
+
+    // Função para atualizar contadores dos cards
+    function updateCardCounters() {
+        const tableRows = document.querySelectorAll('.data-table tbody tr');
+        const operacoesCount = {};
+        
+        // Contar motoristas visíveis por operação
+        tableRows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const operacao = row.cells[3].textContent;
+                operacoesCount[operacao] = (operacoesCount[operacao] || 0) + 1;
+            }
+        });
+        
+        // Atualizar contadores dos cards
+        const cards = document.querySelectorAll('.summary-card[data-filter]');
+        cards.forEach(card => {
+            const filterValue = card.getAttribute('data-filter');
+            const countElement = card.querySelector('.count');
+            
+            if (filterValue === 'total') {
+                // Contar total de motoristas visíveis
+                const totalVisible = Array.from(tableRows).filter(row => row.style.display !== 'none').length;
+                countElement.textContent = totalVisible;
+            } else {
+                // Contar motoristas da operação específica
+                const count = operacoesCount[filterValue] || 0;
+                countElement.textContent = count;
+            }
+        });
+    }
+
+    // Adicionar efeito de fade-in para elementos
+    document.addEventListener('DOMContentLoaded', function() {
+        const elements = document.querySelectorAll('.summary-cards, .table-container, .filters-container');
+        elements.forEach((element, index) => {
+            element.style.animationDelay = `${index * 0.1}s`;
+        });
+
+        // Implementar filtros com autocomplete
+        const filterNome = document.getElementById('filter-nome');
+        const filterCpf = document.getElementById('filter-cpf');
+        const tableRows = document.querySelectorAll('.data-table tbody tr');
+
+        // Função para filtrar a tabela
+        function filterTable() {
+            currentNameFilter = filterNome.value;
+            currentCpfFilter = filterCpf.value;
+            applyAllFilters();
+        }
+
+        // Event listeners para os filtros
+        filterNome.addEventListener('input', filterTable);
+        filterCpf.addEventListener('input', filterTable);
+
+        // Autocomplete para nome
+        filterNome.addEventListener('input', function() {
+            const value = this.value.toLowerCase();
+            const suggestions = [];
+            
+            tableRows.forEach(row => {
+                const nome = row.cells[0].textContent;
+                if (nome.toLowerCase().includes(value) && value.length > 0) {
+                    suggestions.push(nome);
+                }
+            });
+
+            // Criar ou atualizar datalist
+            let datalist = document.getElementById('nome-suggestions');
+            if (!datalist) {
+                datalist = document.createElement('datalist');
+                datalist.id = 'nome-suggestions';
+                filterNome.setAttribute('list', 'nome-suggestions');
+            }
+            
+            datalist.innerHTML = '';
+            suggestions.slice(0, 10).forEach(suggestion => {
+                const option = document.createElement('option');
+                option.value = suggestion;
+                datalist.appendChild(option);
+            });
+        });
+
+        // Autocomplete para CPF
+        filterCpf.addEventListener('input', function() {
+            const value = this.value.toLowerCase();
+            const suggestions = [];
+            
+            tableRows.forEach(row => {
+                const cpf = row.cells[1].textContent;
+                if (cpf.toLowerCase().includes(value) && value.length > 0) {
+                    suggestions.push(cpf);
+                }
+            });
+
+            // Criar ou atualizar datalist
+            let datalist = document.getElementById('cpf-suggestions');
+            if (!datalist) {
+                datalist = document.createElement('datalist');
+                datalist.id = 'cpf-suggestions';
+                filterCpf.setAttribute('list', 'cpf-suggestions');
+            }
+            
+            datalist.innerHTML = '';
+            suggestions.slice(0, 10).forEach(suggestion => {
+                const option = document.createElement('option');
+                option.value = suggestion;
+                datalist.appendChild(option);
+            });
+        });
+    });
+
+    // ===== FUNCIONALIDADES DO MODAL DE CADASTRO =====
+
+    // Abrir modal
+    document.querySelector('.btn-novo-motorista').addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('modal-novo-motorista').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        // Restaurar dados salvos
+        restoreFormData();
+    });
+
+    // Salvar dados do formulário no localStorage
+    function saveFormData() {
+        const form = document.getElementById('form-novo-motorista');
+        const formData = new FormData(form);
+        const data = {};
+        
+        // Salvar todos os campos do formulário
+        for (let [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+        
+        // Salvar checkboxes separadamente
+        data.conf_jornada = document.querySelector('input[name="conf_jornada"]').checked;
+        data.conf_fecham = document.querySelector('input[name="conf_fecham"]').checked;
+        
+        localStorage.setItem('motoristFormData', JSON.stringify(data));
+    }
+    
+    // Restaurar dados do formulário do localStorage
+    function restoreFormData() {
+        const savedData = localStorage.getItem('motoristFormData');
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            const form = document.getElementById('form-novo-motorista');
+            
+            // Restaurar campos de input
+            for (let key in data) {
+                if (key !== 'conf_jornada' && key !== 'conf_fecham') {
+                    const field = form.querySelector(`[name="${key}"]`);
+                    if (field) {
+                        field.value = data[key];
+                    }
+                }
+            }
+            
+            // Restaurar checkboxes
+            if (data.conf_jornada) {
+                document.querySelector('input[name="conf_jornada"]').checked = true;
+            }
+            if (data.conf_fecham) {
+                document.querySelector('input[name="conf_fecham"]').checked = true;
+            }
+        }
+    }
+    
+    // Limpar dados do formulário
+    function clearForm() {
+        document.getElementById('form-novo-motorista').reset();
+        clearValidationErrors();
+        localStorage.removeItem('motoristFormData');
+    }
+    
+    // Fechar modal
+    function closeModal() {
+        // Salvar dados antes de fechar
+        saveFormData();
+        document.getElementById('modal-novo-motorista').style.display = 'none';
+        document.body.style.overflow = 'auto';
+        clearValidationErrors();
+    }
+
+    // Modal só fecha quando clicar no X - removido fechamento ao clicar fora
+    // document.getElementById('modal-novo-motorista').addEventListener('click', function(e) {
+    //     if (e.target === this) {
+    //         closeModal();
+    //     }
+    // });
+
+    // Máscaras e validações
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeFormMasks();
+        initializeFormValidations();
+        
+        // Salvar dados automaticamente quando o usuário digitar
+        const form = document.getElementById('form-novo-motorista');
+        if (form) {
+            form.addEventListener('input', function() {
+                saveFormData();
+            });
+            
+            // Salvar também quando checkboxes mudarem
+            const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    saveFormData();
+                });
+            });
+        }
+    });
+
+    function initializeFormMasks() {
+        // Máscara para datas (dd/mm/aaaa)
+        const dateInputs = document.querySelectorAll('input[placeholder*="dd/mm/aaaa"]');
+        dateInputs.forEach(input => {
+            input.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 8) value = value.substring(0, 8);
+                
+                if (value.length >= 4) {
+                    value = value.substring(0, 2) + '/' + value.substring(2, 4) + '/' + value.substring(4);
+                } else if (value.length >= 2) {
+                    value = value.substring(0, 2) + '/' + value.substring(2);
+                }
+                
+                e.target.value = value;
+            });
+        });
+
+        // Máscara para CPF (000.000.000-00)
+        const cpfInput = document.getElementById('cpf');
+        cpfInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.substring(0, 11);
+            
+            if (value.length >= 10) {
+                value = value.substring(0, 3) + '.' + value.substring(3, 6) + '.' + value.substring(6, 9) + '-' + value.substring(9);
+            } else if (value.length >= 7) {
+                value = value.substring(0, 3) + '.' + value.substring(3, 6) + '.' + value.substring(6);
+            } else if (value.length >= 4) {
+                value = value.substring(0, 3) + '.' + value.substring(3);
+            }
+            
+            e.target.value = value;
+        });
+
+        // Máscara para CNH (apenas números)
+        const cnhInput = document.getElementById('cnh');
+        cnhInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+
+        // Máscara para RG (apenas números)
+        const rgInput = document.getElementById('rg');
+        rgInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+
+        // Máscara para Código SAP (apenas números, máximo 9 dígitos)
+        const sapInput = document.getElementById('codigo_sap');
+        sapInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '').substring(0, 9);
+        });
+
+        // Máscara para CTPS (apenas números, máximo 10 dígitos)
+        const ctpsInput = document.getElementById('ctps');
+        ctpsInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '').substring(0, 10);
+        });
+
+        // Máscara para telefone ((00) 00000-0000)
+        const telefoneInput = document.getElementById('telefone');
+        telefoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.substring(0, 11);
+            
+            if (value.length >= 7) {
+                value = '(' + value.substring(0, 2) + ') ' + value.substring(2, 7) + '-' + value.substring(7);
+            } else if (value.length >= 3) {
+                value = '(' + value.substring(0, 2) + ') ' + value.substring(2);
+            } else if (value.length >= 1) {
+                value = '(' + value.substring(0);
+            }
+            
+            e.target.value = value;
+        });
+
+        // Converter nome para maiúsculas
+        const nomeInput = document.getElementById('nome');
+        nomeInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    }
+
+    function initializeFormValidations() {
+        // Validação de CPF
+        const cpfInput = document.getElementById('cpf');
+        cpfInput.addEventListener('blur', function() {
+            const value = this.value.replace(/\D/g, '');
+            if (value.length > 0 && value.length !== 11) {
+                showFieldError(this, 'CPF inválido');
+            } else {
+                clearFieldError(this);
+            }
+        });
+
+        // Validação de CNH
+        const cnhInput = document.getElementById('cnh');
+        cnhInput.addEventListener('blur', function() {
+            const value = this.value.replace(/\D/g, '');
+            if (value.length > 0 && value.length !== 11) {
+                showFieldError(this, 'Número de CNH inválido');
+            } else {
+                clearFieldError(this);
+            }
+        });
+
+        // Validação de email
+        const emailInput = document.getElementById('email');
+        emailInput.addEventListener('blur', function() {
+            const value = this.value;
+            if (value.length > 0 && !isValidEmail(value)) {
+                showFieldError(this, 'Email inválido');
+            } else {
+                clearFieldError(this);
+            }
+        });
+
+        // Validação de datas
+        const dateInputs = document.querySelectorAll('input[placeholder*="dd/mm/aaaa"]');
+        dateInputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                const value = this.value;
+                if (value.length > 0 && !isValidDate(value)) {
+                    showFieldError(this, 'Data inválida');
+                } else {
+                    clearFieldError(this);
+                }
+            });
+        });
+    }
+
+    // Funções auxiliares
+    function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    function isValidDate(dateStr) {
+        if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return false;
+        
+        const parts = dateStr.split('/');
+        const day = parseInt(parts[0]);
+        const month = parseInt(parts[1]);
+        const year = parseInt(parts[2]);
+        
+        if (year < 1900 || year > 2100) return false;
+        if (month < 1 || month > 12) return false;
+        
+        const date = new Date(year, month - 1, day);
+        return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
+    }
+
+    function showFieldError(field, message) {
+        clearFieldError(field);
+        field.style.borderColor = '#e74c3c';
+        field.style.boxShadow = '0 0 0 3px rgba(231, 76, 60, 0.1)';
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error';
+        errorDiv.textContent = message;
+        errorDiv.style.color = '#e74c3c';
+        errorDiv.style.fontSize = '12px';
+        errorDiv.style.marginTop = '4px';
+        errorDiv.style.fontWeight = '500';
+        
+        field.parentNode.appendChild(errorDiv);
+    }
+
+    function clearFieldError(field) {
+        field.style.borderColor = '#e2e8f0';
+        field.style.boxShadow = '';
+        
+        const errorDiv = field.parentNode.querySelector('.field-error');
+        if (errorDiv) {
+            errorDiv.remove();
+        }
+    }
+
+    function clearValidationErrors() {
+        const errorDivs = document.querySelectorAll('.field-error');
+        errorDivs.forEach(div => div.remove());
+        
+        const inputs = document.querySelectorAll('.form-group input, .form-group select');
+        inputs.forEach(input => {
+            input.style.borderColor = '#e2e8f0';
+            input.style.boxShadow = '';
+        });
+    }
+
+    // Submissão do formulário
+    document.getElementById('form-novo-motorista').addEventListener('submit', function(e) {
+        // Validar campos obrigatórios
+        const requiredFields = this.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                e.preventDefault();
+                showFieldError(field, 'Campo obrigatório');
+                isValid = false;
+            } else {
+                clearFieldError(field);
+            }
+        });
+
+        // Validar checkboxes de verificação
+        const confJornada = document.querySelector('input[name="conf_jornada"]');
+        const confFecham = document.querySelector('input[name="conf_fecham"]');
+        
+        if (!confJornada.checked && !confFecham.checked) {
+            e.preventDefault();
+            showFieldError(confJornada.parentNode.parentNode, 'Selecione pelo menos uma opção de verificação');
+            isValid = false;
+        }
+
+        if (isValid) {
+            // Permitir que o formulário seja enviado para o backend
+            console.log('Formulário válido, enviando dados para o backend...');
+            
+            // Mostrar indicador de carregamento
+            const submitBtn = this.querySelector('.btn-save');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Salvando...';
+            submitBtn.disabled = true;
+            
+            // Limpar dados salvos quando enviar com sucesso
+            localStorage.removeItem('motoristFormData');
+            
+            // O formulário será enviado automaticamente para /motorists
+            // O backend processará e redirecionará de volta
+        }
+    });
+    </script>
+</body>
+</html>

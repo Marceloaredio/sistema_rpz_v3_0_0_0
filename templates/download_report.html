@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Pesquisa de Motoristas e Caminhões</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}"/>
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+
+    <!-- Inclui o componente de autocomplete -->
+    {% include 'partials/autocomplete.html' %}
+</head>
+<body>
+    <div class="content">
+        <h2>Download de Ponto</h2>
+
+        <p class="info-text">
+            Para gerar a tabela de jornada, selecione um <b>motorista</b> e/ou <b>caminhão</b>, e defina o período de pesquisa. A tabela gerada será um arquivo Excel com informações sobre as jornadas filtradas pelo motorista/placa e o período selecionado.
+        </p>
+
+        <!-- Flash message para erro, caso o formulário seja enviado sem selecionar motoristas ou caminhões -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-message">
+                    <ul>
+                        {% for category, message in messages %}
+                        <li>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Formulário de pesquisa -->
+        <div class="form-container">
+        <form action="{{ url_for('routes.download_report') }}" method="POST" id="downloadForm" autocomplete="off">
+            <!-- Seletor de motoristas -->
+            <div class="form-grupo">
+                <label for="motorist_search">Motorista:</label>
+                <input type="hidden" name="motorist_id" id="motorist_id">
+                <input type="text" id="motorist_search" class="form-control" placeholder="Digite o nome do motorista">
+            </div>
+
+            <!-- Seletor de caminhões -->
+            <div class="form-grupo">
+                <label for="truck_search">Caminhão:</label>
+                <input type="hidden" name="truck_id" id="truck_id">
+                <input type="text" id="truck_search" class="form-control" placeholder="Digite a placa">
+            </div>
+
+            <!-- Período de data -->
+            <div class="form-group">
+                <label for="data_inicio">Período: de </label>
+                <input type="date" name="from_date" id="data_inicio" class="form-control" required/>
+
+                <label for="data_fim"> até </label>
+                <input type="date" name="to_date" id="data_fim" class="form-control" required/>
+            </div>
+
+            <!-- Validação para garantir que ao menos um critério seja selecionado -->
+            <div id="validation-message" class="validation-message" style="display: none;">
+                <p>Por favor, selecione ao menos um motorista ou um caminhão e um período.</p>
+            </div>
+
+            <!-- Botão de pesquisa / download -->
+            <button type="submit">Gerar Tabela para Download</button>
+        </form>
+
+        <!-- Script para inicialização do autocomplete e validação -->
+        <script>
+            // Preparar dados para o autocomplete
+            const motoristas = [
+                {% for motorist in motorists %}
+                {
+                    value: "{{ motorist[0] }}",
+                    label: "{{ motorist[1] }}"
+                },
+                {% endfor %}
+            ];
+
+            const caminhoes = [
+                {% for truck in trucks %}
+                {
+                    value: "{{ truck[0] }}",
+                    label: "{{ truck[1] }}"
+                },
+                {% endfor %}
+            ];
+
+            // Inicializar os componentes de autocomplete
+            document.addEventListener('DOMContentLoaded', function() {
+                // Autocomplete para motoristas
+                const autocompleteMotorista = initAutocomplete('motorist_search', {
+                    data: motoristas,
+                    placeholder: 'Digite o nome do motorista...',
+                    onSelect: function(item) {
+                        document.getElementById('motorist_id').value = item.value;
+                    }
+                });
+
+                // Autocomplete para caminhões
+                const autocompletePlaca = initAutocomplete('truck_search', {
+                    data: caminhoes,
+                    placeholder: 'Digite a placa...',
+                    onSelect: function(item) {
+                        document.getElementById('truck_id').value = item.value;
+                    }
+                });
+            });
+
+            // Função para validar se ao menos um critério foi selecionado
+            document.getElementById('downloadForm').addEventListener('submit', function(event) {
+                const motoristaId = document.getElementById('motorist_id').value;
+                const caminhaoId = document.getElementById('truck_id').value;
+                const validationMessage = document.getElementById('validation-message');
+
+                // Se nenhum motorista nem caminhão forem selecionados
+                if (!motoristaId && !caminhaoId) {
+                    validationMessage.style.display = 'block';
+                    event.preventDefault();  // Impede o envio do formulário
+                } else {
+                    validationMessage.style.display = 'none';
+                }
+            });
+        </script>
+        </div>
+    </div>
+</body>
+</html>

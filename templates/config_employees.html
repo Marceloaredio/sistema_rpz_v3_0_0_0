@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuração de Funcionários - Sistema RPZ</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* Container Principal */
+        .main-container {
+            padding: 12px 20px;
+            min-height: 100vh;
+            width: 100%;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Cabeçalho da Página */
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+            margin-top: 20px;
+            color: white;
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeInDown 0.6s ease forwards;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .page-header p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            max-width: 400px;
+            margin: 0;
+            text-align: center;
+        }
+
+
+
+        /* Grid de Opções */
+        .config-grid {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            flex-wrap: nowrap;
+        }
+
+        .config-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 40px 35px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            height: 352px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            flex: 1;
+            min-width: 280px;
+            max-width: 320px;
+            opacity: 0;
+            transform: translateY(50px);
+            animation: slideUpFadeIn 0.8s ease forwards;
+        }
+
+        .config-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .config-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .config-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .config-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .config-card:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .config-card:active {
+            transform: translateY(-1px) scale(1.01);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .config-card .icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+            animation: iconPop 0.6s ease forwards;
+            animation-delay: 0.4s;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        .config-card.drivers .icon {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .config-card.mechanics .icon {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .config-card h3 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            text-align: center;
+            animation: textSlideIn 0.5s ease forwards;
+            animation-delay: 0.5s;
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
+        .config-card p {
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+            text-align: center;
+            max-width: 100%;
+            animation: textSlideIn 0.5s ease forwards;
+            animation-delay: 0.6s;
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
+        .config-card .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+            width: 100%;
+            max-width: 200px;
+            margin-top: auto;
+            animation: buttonSlideUp 0.6s ease forwards;
+            animation-delay: 0.7s;
+            opacity: 0;
+            transform: translateY(20px);
+            text-align: center;
+            line-height: 1.2;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        .config-card.drivers .btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .config-card.mechanics .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .config-card .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .config-card .btn:active {
+            transform: translateY(0px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 15px;
+                align-items: center;
+            }
+            
+            .page-header {
+                margin-top: 15px;
+                margin-bottom: 20px;
+                max-width: 100%;
+            }
+            
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .config-grid {
+                flex-direction: column;
+                gap: 20px;
+                padding: 0;
+                max-width: 100%;
+            }
+            
+            .config-card {
+                padding: 30px 25px;
+                height: 308px;
+                max-width: 100%;
+                min-width: auto;
+                flex: none;
+            }
+        }
+
+        /* Botão Voltar */
+        .back-btn {
+            position: fixed;
+            top: 90px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            animation: backButtonSlideIn 0.5s ease forwards;
+            animation-delay: 0.2s;
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        .back-btn:hover {
+            background: white;
+            transform: scale(1.1) translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-btn:active {
+            transform: scale(1.05) translateY(0px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Efeito Ripple para botões */
+        button, a, .btn {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* Animação de entrada dos cards */
+        @keyframes slideUpFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(50px) scale(0.9);
+            }
+            50% {
+                opacity: 0.7;
+                transform: translateY(25px) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Animação do título */
+        @keyframes fadeInDown {
+            0% {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes iconPop {
+            0% {
+                opacity: 0;
+                transform: scale(0.5) rotate(-180deg);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.1) rotate(0deg);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        @keyframes textSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes buttonSlideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.9);
+            }
+            50% {
+                opacity: 0.8;
+                transform: translateY(10px) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes backButtonSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-30px) scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Botão Voltar -->
+    <button class="back-btn" onclick="history.back()">
+        <i class="fas fa-arrow-left"></i>
+    </button>
+
+    <!-- Container Principal -->
+    <div class="main-container">
+        <!-- Cabeçalho da Página -->
+        <div class="page-header">
+            <h1>Configuração de Funcionários</h1>
+            <p>Gerencie todos os funcionários da empresa de forma organizada e eficiente</p>
+        </div>
+
+        <!-- Grid de Opções -->
+        <div class="config-grid">
+            <!-- Administrativo -->
+            <div class="config-card">
+                <div class="icon">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <h3>Administrativo</h3>
+                <p>Gerencie funcionários do setor administrativo, incluindo gerentes, assistentes e pessoal de escritório.</p>
+                <a href="/config/employees/administrative" class="btn">
+                    <i class="fas fa-cog"></i>
+                    Configurar Administrativo
+                </a>
+            </div>
+
+            <!-- Motoristas -->
+            <div class="config-card drivers">
+                <div class="icon">
+                    <i class="fas fa-id-card"></i>
+                </div>
+                <h3>Motoristas</h3>
+                <p>Gerencie motoristas da frota, documentação, licenças e informações de jornada de trabalho.</p>
+                <a href="/config/employees/drivers" class="btn">
+                    <i class="fas fa-cog"></i>
+                    Configurar Motoristas
+                </a>
+            </div>
+
+            <!-- Mecânica e Portaria -->
+            <div class="config-card mechanics">
+                <div class="icon">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <h3>Mecânica e Portaria</h3>
+                <p>Gerencie funcionários da mecânica, portaria e outros setores operacionais da empresa.</p>
+                <a href="/config/employees/mechanics" class="btn">
+                    <i class="fas fa-cog"></i>
+                    Configurar<br>Mecânica e Portaria
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Adicionar efeitos de hover suaves
+        document.querySelectorAll('.config-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Adicionar efeitos de clique para todos os botões
+        document.querySelectorAll('button, a, .btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                // Criar efeito de ripple
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                ripple.classList.add('ripple');
+                
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+    </script>
+</body>
+</html> 

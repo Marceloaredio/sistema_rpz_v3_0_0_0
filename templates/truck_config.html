@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Caminhões</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}"/>
+</head>
+<body>
+<div class="content">
+    <h1>Lista de Caminhões</h1>
+
+    <!-- Formulário para adicionar um novo caminhão -->
+    <div class="form-container">
+        <h3>Adicionar Novo Caminhão</h3>
+        <form action="/trucks" method="POST" autocomplete="off">
+            <input type="text" name="placa" placeholder="Placa" required><br>
+            <input type="text" name="identificacao" placeholder="Identificação"><br>
+            <input type="number" name="ano" placeholder="Ano"><br>
+            <input type="text" name="modelo" placeholder="Modelo"><br>
+            <input type="text" name="vencimento_aet_dnit" placeholder="Vencimento AET DNIT"><br>
+            <input type="text" name="vencimento_aet_mg" placeholder="Vencimento AET MG"><br>
+            <input type="text" name="vencimento_aet_sp" placeholder="Vencimento AET SP"><br>
+            <input type="text" name="vencimento_aet_go" placeholder="Vencimento AET GO"><br>
+            <input type="text" name="vencimento_civ_cipp" placeholder="Vencimento CIV CIPP"><br>
+            <input type="text" name="vencimento_cronotografo" placeholder="Vencimento Cronotógrafo"><br>
+            <input type="number" name="exercicio_crlv" placeholder="Exercício CRLV"><br>
+            <input type="number" name="peso_tara" placeholder="Peso Tara"><br>
+            <input type="text" name="link_documentacao" placeholder="Link Documentação"><br>
+            <input type="text" name="status" placeholder="Status"><br>
+            <button type="submit">Adicionar Caminhão</button>
+        </form>
+    </div>
+
+    <!-- Tabela de caminhões -->
+    <table>
+        <tr>
+            <th>Placa</th>
+            <th>Identificação</th>
+            <th>Ano</th>
+            <th>Modelo</th>
+            <th>Editar</th>
+            <th>Excluir</th>
+        </tr>
+
+        {% for truck in trucks %}
+        <tr>
+            <td>{{ truck.placa }}</td>
+            <td>{{ truck.identificacao }}</td>
+            <td>{{ truck.ano }}</td>
+            <td>{{ truck.modelo }}</td>
+            <td>
+                <button onclick="show_edit_div('{{truck.id}}', '{{ truck.placa }}', '{{ truck.identificacao }}', '{{ truck.ano }}', '{{ truck.modelo }}', '{{ truck.vencimento_aet_dnit }}', '{{ truck.vencimento_aet_mg }}', '{{ truck.vencimento_aet_sp }}', '{{ truck.vencimento_aet_go }}', '{{ truck.vencimento_civ_cipp }}', '{{ truck.vencimento_cronotografo }}', '{{ truck.exercicio_crlv }}', '{{ truck.peso_tara }}', '{{ truck.link_documentacao }}', '{{ truck.status }}')">
+                    Editar
+                </button>
+            </td>
+            <td>
+                <form action="/trucks" method="POST" autocomplete="off">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <input type="hidden" name="selected_id" value="{{ truck.id }}">
+                    <button type="submit">Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <br>
+
+    <!-- Formulário de Edição e Exclusão -->
+    <div id="edit-div" class="form-container" hidden>
+        <h3>Editar Caminhão</h3>
+        <form action="/trucks" method="POST" autocomplete="off">
+            <!-- Editar Caminhão -->
+            <div>
+                <input type="hidden" name="_method" value="PUT">
+                <input type="hidden" name="_id" id="id">
+                <span id="edit-info"></span><br>
+                <br>
+                <input type="text" name="placa" id="edit-placa" placeholder="Placa" required><br>
+                <input type="text" name="identificacao" id="edit-identificacao" placeholder="Identificação"><br>
+                <input type="number" name="ano" id="edit-ano" placeholder="Ano"><br>
+                <input type="text" name="modelo" id="edit-modelo" placeholder="Modelo"><br>
+                <input type="text" name="vencimento_aet_dnit" id="edit-vencimento_aet_dnit"
+                       placeholder="Vencimento AET DNIT"><br>
+                <input type="text" name="vencimento_aet_mg" id="edit-vencimento_aet_mg" placeholder="Vencimento AET MG"><br>
+                <input type="text" name="vencimento_aet_sp" id="edit-vencimento_aet_sp" placeholder="Vencimento AET SP"><br>
+                <input type="text" name="vencimento_aet_go" id="edit-vencimento_aet_go" placeholder="Vencimento AET GO"><br>
+                <input type="text" name="vencimento_civ_cipp" id="edit-vencimento_civ_cipp"
+                       placeholder="Vencimento CIV CIPP"><br>
+                <input type="text" name="vencimento_cronotografo" id="edit-vencimento_cronotografo"
+                       placeholder="Vencimento Cronotógrafo"><br>
+                <input type="number" name="exercicio_crlv" id="edit-exercicio_crlv" placeholder="Exercício CRLV"><br>
+                <input type="number" name="peso_tara" id="edit-peso_tara" placeholder="Peso Tara"><br>
+                <input type="text" name="link_documentacao" id="edit-link_documentacao" placeholder="Link Documentação"><br>
+                <input type="text" name="status" id="edit-status" placeholder="Status"><br>
+                <button type="submit">Salvar Alterações</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function show_edit_div(id, placa, identificacao, ano, modelo, vencimento_aet_dnit, vencimento_aet_mg, vencimento_aet_sp, vencimento_aet_go, vencimento_civ_cipp, vencimento_cronotografo, exercicio_crlv, peso_tara, link_documentacao, status) {
+            const edit_div = document.getElementById("edit-div");
+            edit_div.hidden = false;
+
+            document.getElementById("id").value = id;
+            document.getElementById("edit-placa").value = placa;
+            document.getElementById("edit-identificacao").value = identificacao;
+            document.getElementById("edit-ano").value = ano;
+            document.getElementById("edit-modelo").value = modelo;
+            document.getElementById("edit-vencimento_aet_dnit").value = vencimento_aet_dnit;
+            document.getElementById("edit-vencimento_aet_mg").value = vencimento_aet_mg;
+            document.getElementById("edit-vencimento_aet_sp").value = vencimento_aet_sp;
+            document.getElementById("edit-vencimento_aet_go").value = vencimento_aet_go;
+            document.getElementById("edit-vencimento_civ_cipp").value = vencimento_civ_cipp;
+            document.getElementById("edit-vencimento_cronotografo").value = vencimento_cronotografo;
+            document.getElementById("edit-exercicio_crlv").value = exercicio_crlv;
+            document.getElementById("edit-peso_tara").value = peso_tara;
+            document.getElementById("edit-link_documentacao").value = link_documentacao;
+            document.getElementById("edit-status").value = status;
+
+            document.getElementById("edit-info").innerText = "Caminhão selecionado: " + placa;
+        }
+    </script>
+</div>
+</body>
+</html>

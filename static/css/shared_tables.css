@@ -1,0 +1,435 @@
+/* Estilos compartilhados para tabelas do sistema */
+.shared-table {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 20px;
+    border-collapse: collapse;
+    background-color: #fff;
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    text-align: left;
+}
+
+.shared-table th,
+.shared-table td {
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: middle;
+}
+
+.shared-table td {
+    color: #1F2937;
+    font-size: 13px;
+}
+
+.shared-table th {
+    background-color: #2C3E50;
+    color: #FFFFFF;
+    font-weight: bold;
+    font-size: 11px;
+    min-width: 80px;
+    white-space: pre-line;
+}
+
+.shared-table tbody tr:nth-child(odd) {
+    background-color: #FFFFFF;
+}
+
+.shared-table tbody tr:nth-child(even) {
+    background-color: #F9FAFB;
+}
+
+.shared-table tbody tr:hover {
+    background-color: #E5E7EB;
+}
+
+/* Botões */
+.shared-btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.shared-btn-primary {
+    background-color: #2C3E50;
+    color: white;
+}
+
+.shared-btn-primary:hover {
+    background-color: #1A2634;
+}
+
+.shared-btn-danger {
+    background-color: #e0465d;
+    color: white;
+}
+
+.shared-btn-danger:hover {
+    background-color: #c82333;
+}
+
+/* Modal */
+.shared-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    overflow: hidden;
+    padding: 15px;
+    box-sizing: border-box;
+    inset: 0;
+}
+
+/* Estilos específicos para iframe */
+.shared-modal.iframe-modal {
+    position: absolute;
+    height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
+}
+
+.shared-modal-content {
+    background-color: #fefefe;
+    margin: 15px auto;
+    padding: 15px;
+    border: 1px solid #ddd;
+    width: 98%;
+    max-width: 98%;
+    border-radius: 5px;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    height: calc(100vh - 30px);
+    overflow: hidden;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ajustes específicos para iframe */
+.shared-modal.iframe-modal .shared-modal-content {
+    height: calc(100vh - 60px);
+    margin: 10px auto;
+    overflow-y: auto;
+}
+
+/* Container para a tabela dentro do modal */
+.modal-body {
+    width: 100%;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
+    z-index: 10000;
+}
+
+/* Ajustes específicos para iframe */
+.shared-modal.iframe-modal .modal-body {
+    height: calc(100% - 120px);
+    overflow-y: auto;
+}
+
+/* Container para manter alinhamento consistente */
+.table-wrapper {
+    width: calc(100% - 15px);
+    overflow-x: auto;
+    margin-right: 15px;
+}
+
+/* Ajustes específicos para iframe */
+.shared-modal.iframe-modal .table-wrapper {
+    max-height: calc(100vh - 170px);
+    overflow-y: auto;
+}
+
+/* Fazer a área da tabela ocupar todo espaço disponível no modal */
+.details-wrapper {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Tabela de detalhes */
+.details-table {
+    min-width: 100%;
+    width: max-content;
+    position: relative;
+    z-index: 10000;
+    table-layout: fixed;
+    margin: 0;
+}
+
+/* Ajustes específicos para cada coluna */
+.details-table th:nth-child(1), /* Checkbox */
+.details-table td:nth-child(1) {
+    width: 30px;
+    min-width: 30px;
+    max-width: 30px;
+}
+
+.details-table th:nth-child(2), /* Placa */
+.details-table td:nth-child(2) {
+    width: 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+.details-table th:nth-child(3), /* Data */
+.details-table td:nth-child(3) {
+    width: 90px;
+    min-width: 90px;
+    max-width: 90px;
+}
+
+.details-table th:nth-child(4), /* Dia da Semana */
+.details-table td:nth-child(4) {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+}
+
+/* Colunas de horário */
+.details-table th:nth-child(5),
+.details-table th:nth-child(6),
+.details-table th:nth-child(7),
+.details-table th:nth-child(8),
+.details-table td:nth-child(5),
+.details-table td:nth-child(6),
+.details-table td:nth-child(7),
+.details-table td:nth-child(8) {
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+}
+
+/* Colunas de tempo */
+.details-table th:nth-child(10),
+.details-table th:nth-child(11),
+.details-table th:nth-child(12),
+.details-table th:nth-child(13),
+.details-table th:nth-child(14),
+.details-table th:nth-child(15),
+.details-table th:nth-child(16),
+.details-table td:nth-child(10),
+.details-table td:nth-child(11),
+.details-table td:nth-child(12),
+.details-table td:nth-child(13),
+.details-table td:nth-child(14),
+.details-table td:nth-child(15),
+.details-table td:nth-child(16) {
+    width: 65px;
+    min-width: 65px;
+    max-width: 65px;
+}
+
+/* Coluna de Observação */
+.details-table th:nth-child(9),
+.details-table td:nth-child(9) {
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
+}
+
+/* Coluna de Infrações - Mais flexível */
+.details-table th:nth-child(17),
+.details-table td:nth-child(17) {
+    min-width: 200px;
+    max-width: none;
+    white-space: pre-line; /* Permite quebra de linha */
+}
+
+/* Ajuste dos títulos das colunas */
+.details-table th {
+    white-space: pre-line;
+    line-height: 1.1;
+    padding: 4px 3px;
+    text-align: center;
+    font-size: 11px;
+}
+
+/* Ajuste do conteúdo das células */
+.details-table td {
+    padding: 3px;
+    text-align: center;
+    font-size: 13px;
+}
+
+.shared-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    background-color: #fefefe;
+    z-index: 10001;
+}
+
+.shared-modal-title {
+    margin: 0;
+    font-size: 1.2em;
+    color: #2C3E50;
+}
+
+.shared-modal-close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.shared-modal-close:hover {
+    color: #2C3E50;
+}
+
+/* Checkbox personalizado */
+.shared-checkbox {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+/* Status e cores */
+.status-atualizado {
+    background-color: #d4edda !important;
+}
+
+.status-pendente {
+    background-color: #fff3cd !important;
+}
+
+.status-atrasado {
+    background-color: #f8d7da !important;
+}
+
+.obs-completo {
+    color: green !important;
+    font-weight: bold;
+}
+
+.obs-faltante {
+    color: orange !important;
+    font-weight: bold;
+}
+
+.sem-registros {
+    color: red !important;
+    font-weight: bold;
+}
+
+/* Ícones */
+.shared-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #2C3E50;
+    font-size: 1.2em;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    margin: 0 auto;
+}
+
+.shared-icon:hover {
+    color: #1A2634;
+    background-color: rgba(44, 62, 80, 0.1);
+}
+
+.view-details {
+    display: flex;
+    margin: 0 auto;
+}
+
+/* Paginação */
+.shared-pagination {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin: 0 10px 4px 0;
+    padding: 0;
+}
+
+/* Modal Footer */
+/* Removido o rodapé fixo para liberar espaço. Mantemos a classe caso alguma página ainda use, mas zeramos e escondemos */
+.modal-footer {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+/* Ajustes para o container */
+.content {
+    position: relative;
+}
+
+/* Quando o modal estiver aberto */
+body:has(.shared-modal[style*="display: block"]) {
+    overflow: hidden;
+}
+
+.shared-modal[style*="display: block"] ~ * {
+    pointer-events: none;
+}
+
+/* Responsividade */
+@media screen and (max-width: 1200px) {
+    .shared-modal {
+        padding: 10px;
+    }
+
+    .shared-modal-content {
+        margin: 10px auto;
+        padding: 15px;
+        min-width: 98%;
+    }
+} 
+
+/* ---------------------------
+   Overrides específicos: Modal Fechamento
+   A tabela do Fechamento usa o id #detailsTable
+   Precisamos neutralizar as regras gerais da .details-table que
+   definem min/max para a coluna 17 (usada como "Infrações" em Jornada),
+   pois no Fechamento a coluna 17 é "Diária" e deve ser estreita.
+---------------------------- */
+#detailsTable.details-table th:nth-child(17),
+#detailsTable.details-table td:nth-child(17) {
+    width: 95px !important;
+    min-width: 95px !important;
+    max-width: 95px !important;
+    white-space: nowrap;
+}
+
+#detailsTable.details-table th:nth-child(18),
+#detailsTable.details-table td:nth-child(18) {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+    white-space: nowrap;
+}
+
+/* Ajuste para Observação no Fechamento (coluna 9) */
+#detailsTable.details-table th:nth-child(9),
+#detailsTable.details-table td:nth-child(9) {
+    width: 180px !important;
+    min-width: 180px !important;
+}
+

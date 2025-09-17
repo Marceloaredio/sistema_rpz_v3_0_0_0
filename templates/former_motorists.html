@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motoristas Ativos</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/motorists.css') }}"/>
+    
+
+</head>
+<body>
+<div class="content">
+    <!-- Cabeçalho da página -->
+    <div class="page-header">
+        <h1 class="page-title">Motoristas Ativos</h1>
+        <a href="#" class="btn-novo-motorista">Novo Motorista</a>
+    </div>
+
+    <!-- Cards de resumo por operação -->
+    <div class="summary-cards">
+        {% for operacao, count in operacoes_summary %}
+        <div class="summary-card">
+            <h3>Operação {{ operacao }}</h3>
+            <p class="count">{{ count }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Container da tabela -->
+    <div class="table-container">
+        <div class="table-header">
+            <h2 class="table-title">Lista de Motoristas Ativos</h2>
+            <span class="table-count">{{ motorists|length }} motoristas</span>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Motorista</th>
+                        <th>CPF</th>
+                        <th>CNH</th>
+                        <th>Operação Principal</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for motorist in motorists %}
+                    <tr>
+                        <td>{{ motorist.nome }}</td>
+                        <td>{{ motorist.cpf }}</td>
+                        <td>{{ motorist.cnh }}</td>
+                        <td>{{ motorist.operacao }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-detalhes" onclick="verDetalhes({{ motorist.id }})">
+                                    Detalhes
+                                </button>
+                                <button class="btn-editar" onclick="editarMotorista({{ motorist.id }})">
+                                    Editar
+                                </button>
+                                <button class="btn-excluir" onclick="excluirMotorista({{ motorist.id }})">
+                                    Excluir
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Funções para as ações dos botões (serão implementadas posteriormente)
+    function verDetalhes(motoristId) {
+        console.log('Ver detalhes do motorista:', motoristId);
+        // TODO: Implementar modal ou página de detalhes
+    }
+
+    function editarMotorista(motoristId) {
+        console.log('Editar motorista:', motoristId);
+        // TODO: Implementar formulário de edição
+    }
+
+    function excluirMotorista(motoristId) {
+        if (confirm('Tem certeza que deseja excluir este motorista?')) {
+            console.log('Excluir motorista:', motoristId);
+            // TODO: Implementar exclusão
+        }
+    }
+
+    // Adicionar efeito de fade-in para elementos
+    document.addEventListener('DOMContentLoaded', function() {
+        const elements = document.querySelectorAll('.summary-cards, .table-container');
+        elements.forEach((element, index) => {
+            element.style.animationDelay = `${index * 0.1}s`;
+        });
+    });
+</script>
+</body>
+</html> 

@@ -1,0 +1,145 @@
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Transições globais para elementos interativos */
+button, a, input[type="button"], input[type="submit"], .btn, .config-card, .back-btn {
+  transition: all 0.3s ease;
+}
+
+/* Efeitos de hover para botões */
+button:hover, a:hover, input[type="button"]:hover, input[type="submit"]:hover, .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Efeitos de clique para botões */
+button:active, a:active, input[type="button"]:active, input[type="submit"]:active, .btn:active {
+  transform: translateY(0px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+html, body {
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Topbar */
+.topbar {
+  background-color: #002f5f;
+  color: white;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 80px;
+  width: 100%;
+  font-size: 14px;
+  z-index: 1000;
+}
+
+.topbar .left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.topbar .left img {
+  height: 50px;
+}
+
+.topbar .right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.topbar .right span.username {
+  white-space: nowrap;
+}
+
+.topbar a {
+  color: white;
+  text-decoration: none;
+  font-weight: normal;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.3s ease;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.topbar a:hover {
+  text-decoration: underline;
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Layout principal: abaixo da topbar */
+.main-container {
+  display: flex;
+  height: calc(100vh - 60px);
+}
+
+/* Sidebar */
+.sidebar {
+  width: 180px;
+  background-color: #002c5f;
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar .logo {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.sidebar .logo img {
+  max-width: 100%;
+  max-height: 60px;
+}
+
+.sidebar .nav {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar .nav li a {
+  display: block;
+  padding: 12px 18px;
+  color: white;
+  text-decoration: none;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  margin: 2px 8px;
+}
+
+.sidebar .nav li a:hover {
+  background-color: #004080;
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Conteúdo */
+.content {
+  flex: 1;
+  background-color: #f4f4f4;
+}
+
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}

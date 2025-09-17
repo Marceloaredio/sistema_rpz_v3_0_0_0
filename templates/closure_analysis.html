@@ -1,0 +1,2275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>RPZ</title>
+    
+    <!-- jQuery -->
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- CSS e JS para conflitos -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/conflict_modal.css') }}" />
+    <script src="{{ url_for('static', filename='js/conflict-utils.js') }}"></script>
+    
+    <!-- Progress Bar -->
+    {% include 'partials/progress_bar.html' %}
+    <script src="{{ url_for('static', filename='js/progress.js') }}"></script>
+    
+    <!-- Dayjs -->
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="{{ url_for('static', filename='js/jornada-1.0.0.js') }}"></script>
+    
+    <!-- Validation Notifications -->
+    <script src="{{ url_for('static', filename='js/validation-notifications.js') }}"></script>
+
+    <style>
+        #tabela-confirmacao thead th {
+            position: sticky;
+            top: 0;
+            background: #222;
+            color: white;
+            z-index: 2;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Roboto', sans-serif;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #2C3E50;
+            color: #FFFFFF;
+            padding: 4px 6px;
+            font-weight: bold;
+            white-space: pre-line;
+            font-size: 11px;
+            min-width: 80px;
+        }
+
+        td {
+            padding: 4px 6px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #1F2937;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 13px;
+        }
+
+        tr:nth-child(odd) td {
+            background-color: #FFFFFF;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #F9FAFB;
+        }
+
+        tr.old-line td {
+            background-color: #8ebeec;
+        }
+
+        tr.old-line:hover td {
+            background-color: #608dec;
+        }
+
+        tr.has_infraction td {
+            background-color: #bb8990;
+        }
+
+        tr.has_infraction:hover td {
+            background-color: #c26a78;
+        }
+
+        tr:hover td {
+            background-color: #E5E7EB;
+        }
+
+        /* Estilo para linhas de feriado - verde mais visível */
+        tr.holiday-row {
+            background-color: #c8e6c9 !important;
+            border-left: 5px solid #2e7d32 !important;
+        }
+
+        tr.holiday-row:hover {
+            background-color: #a5d6a7 !important;
+        }
+
+        tr.holiday-row td {
+            background-color: inherit !important;
+        }
+
+        /* Tooltip nativo do browser + cursor */
+        tr.holiday-row {
+            cursor: help !important;
+        }
+
+        #btn-salvar-edicao {
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .tabela-wrapper {
+            width: 100% !important;
+            overflow-x: auto !important;
+            display: block !important;
+            margin-top: 10px !important;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e1e5e9;
+            transition: all 0.3s ease;
+        }
+        
+        .tabela-wrapper:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+        
+        /* Estilo para tabelas de jornada */
+        .tabela-jornada {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e1e5e9;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        .tabela-jornada:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .tabela-wrapper table {
+            min-width: 950px !important;
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+
+        .tabela-wrapper th,
+        .tabela-wrapper td {
+            white-space: nowrap !important;
+            font-size: 12px !important;
+            padding: 6px 4px !important;
+            text-align: center !important;
+        }
+        
+        /* Cores alternadas e hover melhorados para todas as tabelas */
+        .tabela-wrapper tr,
+        .tabela-jornada tr,
+        table[id^="tabela-analise-"] tr,
+        #tabela-confirmacao tr {
+            transition: all 0.3s ease !important;
+        }
+        
+        /* Linhas alternadas com cores mais visíveis */
+        .tabela-wrapper tr:nth-child(even),
+        .tabela-jornada tr:nth-child(even),
+        table[id^="tabela-analise-"] tr:nth-child(even),
+        #tabela-confirmacao tr:nth-child(even) {
+            background-color: #f8f9fa !important;
+        }
+        
+        .tabela-wrapper tr:nth-child(odd),
+        .tabela-jornada tr:nth-child(odd),
+        table[id^="tabela-analise-"] tr:nth-child(odd),
+        #tabela-confirmacao tr:nth-child(odd) {
+            background-color: #ffffff !important;
+        }
+        
+        /* Hover effect com destaque profissional */
+        .tabela-wrapper tr:hover,
+        .tabela-jornada tr:hover,
+        table[id^="tabela-analise-"] tr:hover,
+        #tabela-confirmacao tr:hover {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%) !important;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2) !important;
+            transform: translateY(-2px) !important;
+            border-left: 4px solid #667eea !important;
+        }
+        
+        /* Inputs compactos */
+        .tabela-wrapper input[type="time"],
+        .tabela-wrapper input[type="text"],
+        .tabela-wrapper select {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-size: 11px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        /* Destaque especial para campos de horário */
+        .tabela-wrapper input[type="time"] {
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            color: #2c3e50 !important;
+            background-color: #f8f9fa !important;
+            border: 2px solid #667eea !important;
+            padding: 6px 8px !important;
+            text-align: center !important;
+        }
+        
+        .tabela-wrapper input[type="time"]:focus {
+            background-color: #e3f2fd !important;
+            border-color: #5a6fd8 !important;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+        }
+        
+        .tabela-wrapper input[type="time"]:focus,
+        .tabela-wrapper input[type="text"]:focus,
+        .tabela-wrapper select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+        
+        /* Destaque para campos de validação preenchidos */
+        .tabela-wrapper select:not([value=""]):not([value="Selecione"]),
+        .tabela-wrapper select option:checked:not([value=""]):not([value="Selecione"]) {
+            background-color: #e8f5e8 !important;
+            border-color: #28a745 !important;
+            color: #155724 !important;
+            font-weight: 600 !important;
+        }
+        
+        .tabela-jornada select:not([value=""]):not([value="Selecione"]),
+        .tabela-jornada select option:checked:not([value=""]):not([value="Selecione"]) {
+            background-color: #e8f5e8 !important;
+            border-color: #28a745 !important;
+            color: #155724 !important;
+            font-weight: 600 !important;
+        }
+        
+        table[id^="tabela-analise-"] select:not([value=""]):not([value="Selecione"]),
+        table[id^="tabela-analise-"] select option:checked:not([value=""]):not([value="Selecione"]) {
+            background-color: #e8f5e8 !important;
+            border-color: #28a745 !important;
+            color: #155724 !important;
+            font-weight: 600 !important;
+        }
+        
+        #tabela-confirmacao select:not([value=""]):not([value="Selecione"]),
+        #tabela-confirmacao select option:checked:not([value=""]):not([value="Selecione"]) {
+            background-color: #e8f5e8 !important;
+            border-color: #28a745 !important;
+            color: #155724 !important;
+            font-weight: 600 !important;
+        }
+        
+        /* Destaque para campos de horário em todas as tabelas */
+        .tabela-jornada input[type="time"],
+        table[id^="tabela-analise-"] input[type="time"] {
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            color: #2c3e50 !important;
+            background-color: #f8f9fa !important;
+            border: 2px solid #667eea !important;
+            padding: 6px 8px !important;
+            text-align: center !important;
+            border-radius: 4px !important;
+        }
+        
+        .tabela-jornada input[type="time"]:focus,
+        table[id^="tabela-analise-"] input[type="time"]:focus {
+            background-color: #e3f2fd !important;
+            border-color: #5a6fd8 !important;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+        }
+        .bloco-visual {
+            background: #fff;
+            border: 1px solid #e1e5e9;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            position: relative;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .bloco-visual:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            transform: translateY(-2px);
+        }
+        .bloco-visual h2 {
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .bloco-visual:hover h2 {
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .btn-add-linha {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 3px 8px rgba(102,126,234,0.3);
+            transition: all 0.3s ease;
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+        .btn-add-linha:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: scale(1.15) translateY(-50%);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+        }
+        
+        .btn-observacoes {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 3px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-observacoes:hover {
+            background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+        }
+        
+        .observacoes-container {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .observacoes-container:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 768px) {
+            .bloco-visual {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+            
+            .bloco-visual h2 {
+                font-size: 16px;
+                padding: 8px 12px;
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .tabela-wrapper th,
+            .tabela-wrapper td {
+                font-size: 10px !important;
+                padding: 4px 3px !important;
+            }
+            
+            .tabela-wrapper input[type="time"],
+            .tabela-wrapper input[type="text"],
+            .tabela-wrapper select {
+                font-size: 10px;
+                padding: 3px 4px;
+            }
+            
+            /* Manter destaque dos campos de horário em tablets */
+            .tabela-wrapper input[type="time"],
+            .tabela-jornada input[type="time"],
+            table[id^="tabela-analise-"] input[type="time"] {
+                font-size: 12px !important;
+                font-weight: 600 !important;
+                padding: 5px 6px !important;
+            }
+            
+            .btn-add-linha {
+                width: 20px;
+                height: 20px;
+                font-size: 10px;
+                right: -4px;
+            }
+            
+            .btn-observacoes {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .tabela-wrapper th,
+            .tabela-wrapper td {
+                font-size: 9px !important;
+                padding: 3px 2px !important;
+            }
+            
+            .tabela-wrapper input[type="time"],
+            .tabela-wrapper input[type="text"],
+            .tabela-wrapper select {
+                font-size: 9px;
+                padding: 2px 3px;
+            }
+            
+            /* Manter destaque dos campos de horário em mobile */
+            .tabela-wrapper input[type="time"],
+            .tabela-jornada input[type="time"],
+            table[id^="tabela-analise-"] input[type="time"] {
+                font-size: 11px !important;
+                font-weight: 600 !important;
+                padding: 4px 5px !important;
+            }
+        }
+
+        /* Estilos para Classificação de Blocos */
+        .classificacao-bloco {
+            transition: all 0.3s ease;
+        }
+
+        .classificacao-bloco:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .classificacao-select {
+            transition: all 0.3s ease;
+        }
+
+        .classificacao-select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .badge-classificacao {
+            transition: all 0.3s ease;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        /* Cores dos badges por classificação */
+        .badge-valid {
+            background-color: #28a745 !important;
+            color: white !important;
+        }
+
+        .badge-carga-descarga {
+            background-color: #ffc107 !important;
+            color: #212529 !important;
+        }
+
+        .badge-garagem {
+            background-color: #17a2b8 !important;
+            color: white !important;
+        }
+
+        .badge-invalid {
+            background-color: #dc3545 !important;
+            color: white !important;
+        }
+
+        /* Cores das bordas do container por classificação */
+        .classificacao-bloco.border-valid {
+            border-left-color: #28a745 !important;
+        }
+
+        .classificacao-bloco.border-carga-descarga {
+            border-left-color: #ffc107 !important;
+        }
+
+        .classificacao-bloco.border-garagem {
+            border-left-color: #17a2b8 !important;
+        }
+
+        .classificacao-bloco.border-invalid {
+            border-left-color: #dc3545 !important;
+        }
+
+        /* Tooltip customizado */
+        .btn-info-classificacao {
+            position: relative;
+        }
+
+        .btn-info-classificacao:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: pre-line;
+            z-index: 1000;
+            min-width: 200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-info-classificacao:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 115%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #333;
+            z-index: 1000;
+        }
+
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .classificacao-bloco > div {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 8px !important;
+            }
+            
+            .classificacao-select {
+                min-width: 100% !important;
+            }
+        }
+
+
+    </style>
+
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/awesome.all.min.css') }}"/>
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modal_overlay.css') }}"/>
+    
+    <style>
+        /* Estilos para os botões de ação */
+        .btn-nova-analise, .btn-pre-visualizacao {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-nova-analise {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-nova-analise:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            color: white;
+        }
+        
+        .btn-pre-visualizacao {
+            padding: 10px 20px;
+            background-color: #2C3E50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-pre-visualizacao:hover {
+            background-color: #34495e;
+        }
+        
+        .btn-nova-analise i, .btn-pre-visualizacao i {
+            font-size: 16px;
+        }
+        
+        /* Melhorias no cabeçalho de informações */
+        .info-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #495057;
+        }
+        
+        .info-header strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="content">
+    <input type="hidden" id="nome-motorista" value="{{ motorist_id }} - {{ motorist }}">
+    <!-- Informações do veículo compactas -->
+    <div class="info-veiculo" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <strong>Placa:</strong> {{ plate }}
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <strong>Motorista:</strong> {{ motorist }}
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <strong>Data Inicial:</strong> {{ data_inicial|datetimeformat('%d/%m/%Y') }}
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <strong>Data Final:</strong> {{ data_final|datetimeformat('%d/%m/%Y') }}
+        </div>
+    </div>
+    
+    <!-- Botões de ação compactos -->
+    <div class="botoes-acao" style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+        <a href="/reports" class="btn-nova-analise" style="padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.5px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">
+            <i class="fas fa-redo"></i> Nova Análise
+        </a>
+        <button class="btn-pre-visualizacao" onclick="salvarAnalise('{{ motorist_id }}', '{{ plate }}')" style="padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.5px; background: #2C3E50; color: white; box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);">
+            <i class="fas fa-eye"></i> Pré-visualização
+        </button>
+    </div>
+
+    <div id="blocos-dinamicos">
+        {% for bloco in blocos %}
+        {% if loop.first %}
+            <div class="bloco-dia bloco-visual" data-bloco="{{ loop.index0 }}" style="display: block;">
+        {% else %}
+            <div class="bloco-dia bloco-visual" data-bloco="{{ loop.index0 }}" style="display: none;">
+        {% endif %}
+            <h2>Bloco {{ loop.index }} - {{ bloco.data_bloco|datetimeformat('%d/%m/%Y') }} ({{ bloco.dia_semana }})</h2>
+
+            <!-- Seletor de Classificação do Bloco -->
+            <div class="classificacao-bloco" style="margin: 10px 0; padding: 10px; background-color: #f8f9fa; border-radius: 5px; border-left: 4px solid #007bff;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <label for="classificacao-{{ loop.index0 }}" style="font-weight: bold; color: #2c3e50; margin: 0;">
+                        Classificação do Dia:
+                    </label>
+                    <select id="classificacao-{{ loop.index0 }}" 
+                            class="classificacao-select" 
+                            data-motorist-id="{{ motorist_id }}" 
+                            data-date="{{ bloco.data_bloco|datetimeformat('%d-%m-%Y') }}" 
+                            data-truck-id="{{ truck_id }}"
+                            style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; min-width: 150px;">
+                        <option value="VALIDO">VÁLIDO</option>
+                        <option value="CARGA_DESCARGA">CARGA/DESCARGA</option>
+                        <option value="GARAGEM">GARAGEM</option>
+                        <option value="INVALIDO">INVÁLIDO</option>
+                    </select>
+                    <span id="badge-classificacao-{{ loop.index0 }}" class="badge-classificacao" style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; background-color: #28a745;">
+                        VÁLIDO
+                    </span>
+                    <button type="button" 
+                            class="btn-info-classificacao" 
+                            data-tooltip="VÁLIDO: Dia normal de trabalho&#10;CARGA/DESCARGA: Tempo de carga/descarga&#10;GARAGEM: Tempo em garagem&#10;INVÁLIDO: Dia não considerado para cálculos"
+                            style="background: none; border: none; color: #007bff; cursor: help; font-size: 16px; padding: 0; margin-left: 5px;">
+                        ℹ️
+                    </button>
+                </div>
+            </div>
+
+            <div class="navegacao-bloco" style="text-align: right; margin-top: 15px;">
+                {% if not loop.first %}
+                <button onclick="navegarBloco(-1)">⬅ Anterior</button>
+                {% endif %}
+                {% if not loop.last %}
+                <button onclick="navegarBloco(1)">Próximo ➡</button>
+                {% endif %}
+            </div>
+
+            {% if not bloco.sem_movimento %}
+            <div style="display: flex; gap: 15px; justify-content: space-between; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 260px;">
+                    <h3 style="font-size: 14px; margin-bottom: 8px; color: #2c3e50;">Início de Jornada por Movimento</h3>
+                    <table class="tabela-jornada">
+                        <tr>
+                            <th>Hora</th>
+                            <th>Maps</th>
+                            <th>Status</th>
+                        </tr>
+                        <tr>
+                            <td><input type="time" value="{{ bloco.inicio_movimento.hora.strftime('%H:%M')}}"></td>
+                            <td><a href="{{ bloco.inicio_movimento.link }}" target="_blank">Abrir</a></td>
+                            <td><select><option></option><option>Válido</option></select></td>
+                        </tr>
+                    </table>
+                </div>
+                <div style="flex: 1; min-width: 260px;">
+                    <h3 style="font-size: 14px; margin-bottom: 8px; color: #2c3e50;">Início de Jornada por Ignição</h3>
+                    <table class="tabela-jornada">
+                        <tr>
+                            <th>Hora</th>
+                            <th>Maps</th>
+                            <th>Status</th>
+                        </tr>
+                        <tr>
+                            <td><input type="time" value="{{ bloco.inicio_ignicao.hora.strftime('%H:%M') }}"></td>
+                            <td><a href="{{ bloco.inicio_ignicao.link }}" target="_blank">Abrir</a></td>
+                            <td><select><option></option><option>Válido</option></select></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div style="display: flex; gap: 15px; margin-top: 8px; justify-content: space-between; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 260px;">
+                    <h3 style="font-size: 14px; margin-bottom: 8px; color: #2c3e50;">Fim de Jornada por Movimento</h3>
+                    <table class="tabela-jornada">
+                        <tr>
+                            <th>Hora</th>
+                            <th>Maps</th>
+                            <th>Status</th>
+                        </tr>
+                        <tr>
+                            <td><input type="time" value="{{ bloco.fim_movimento.hora.strftime('%H:%M') }}"></td>
+                            <td><a href="{{ bloco.fim_movimento.link }}" target="_blank">Abrir</a></td>
+                            <td><select><option></option><option>Válido</option></select></td>
+                        </tr>
+                    </table>
+                </div>
+                <div style="flex: 1; min-width: 260px;">
+                    <h3 style="font-size: 14px; margin-bottom: 8px; color: #2c3e50;">Fim de Jornada por Ignição</h3>
+                    <table class="tabela-jornada">
+                        <tr>
+                            <th>Hora</th>
+                            <th>Maps</th>
+                            <th>Status</th>
+                        </tr>
+                        <tr>
+                            <td><input type="time" value="{{ bloco.fim_ignicao.hora.strftime('%H:%M') }}"></td>
+                            <td><a href="{{ bloco.fim_ignicao.link }}" target="_blank">Abrir</a></td>
+                            <td><select><option></option><option>Válido</option></select></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <!-- Dados para Análise -->
+            <div style="margin-top: 12px; margin-bottom: 4px; position: relative;">
+                <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #273c75; background: #eaf0fa; padding: 8px 15px; border-radius: 6px; display: inline-block;">Dados para Análise</h3>
+                <button type="button" class="btn-add-linha" title="Adicionar linha" onclick="adicionarLinhaAnalise({{ loop.index0 }})"><i class="fas fa-plus"></i></button>
+            </div>
+            <div class="tabela-wrapper">
+            <table class="tabela-jornada" id="tabela-analise-{{ loop.index0 }}">
+                <tr>
+                    <th>Início</th>
+                    <th>Fim</th>
+                    <th>Cidade</th>
+                    <th>Endereço</th>
+                    <th>Maps</th>
+                    <th>Tempo</th>
+                    <th>Validação</th>
+                </tr>
+                {% for parada in bloco.paradas %}
+                <tr>
+                    <td><input type="time" class="campo-inicio" value="{{ parada.inicio }}"></td>
+                    <td><input type="time" class="campo-fim" value="{{ parada.fim }}"></td>
+                    <td><input type="text" readonly value="{{ parada.cidade }}"></td>
+                    <td><input type="text" readonly value="{{ parada.rua }}"></td>
+                    <td><a href="{{ parada.link }}" target="_blank">Abrir</a></td>
+                    <td><input type="time" value="{{ parada.tempo }}" class="campo-tempo" readonly/></td>
+                    <td>
+                        <select>
+                            <option></option>
+                            <option>REFEIÇÃO</option>
+                            <option>DESCANSO</option>
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+
+            </table>
+            </div>
+            
+            <!-- Botão Observações -->
+            <div style="margin-top: 10px; margin-bottom: 8px;">
+                <button type="button" class="btn-observacoes" onclick="toggleObservacoes({{ loop.index0 }})">
+                    <i class="fas fa-comment"></i> Observações
+                </button>
+                <div id="observacoes-container-{{ loop.index0 }}" class="observacoes-container" style="display: none; margin-top: 10px;">
+                    <textarea 
+                        id="observacoes-texto-{{ loop.index0 }}" 
+                        class="observacoes-textarea" 
+                        placeholder="Digite suas observações aqui (máximo 100 caracteres)..."
+                        maxlength="100"
+                        rows="3"
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical; font-family: inherit;"
+                    ></textarea>
+                    <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                        <span id="caracteres-restantes-{{ loop.index0 }}">100</span> caracteres restantes
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- BLOCO ESPECIAL SEM MOVIMENTO -->
+            <div style="margin-top: 20px; background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 6px;">
+                {% if bloco.get('inicio_ignicao') is none or bloco.get('fim_ignicao') is none %}
+                <h3 style="margin-top: 0; color: #856404;">Não houve movimento para o veículo buscado nesta data.</h3>
+                <p><strong>Link Maps:</strong>
+                    <a href="{{ bloco.local_sem_movimento.link }}" target="_blank">
+                        {{ bloco.local_sem_movimento.lat }}, {{ bloco.local_sem_movimento.lon }}
+                    </a>
+                </p>
+                {% else %}
+                <h3 style="margin-top: 0; color: #856404;">Nessa data houve somente movimentação por ignição.</h3>
+                <p><strong>Link Maps:</strong>
+                    <a href="{{ bloco.local_sem_movimento.link }}" target="_blank">
+                        {{ bloco.local_sem_movimento.lat }}, {{ bloco.local_sem_movimento.lon }}
+                    </a>
+                    <strong> Início da ignição: </strong>{{ bloco.inicio_ignicao }}
+                    <strong> Fim da ignição: </strong>{{ bloco.fim_ignicao }}
+                </p>
+                {% endif %}
+
+                <label><strong>Motivo:</strong></label>
+                <select class="campo-observacao" onchange="toggleCamposHorarios(this)">
+                    <option></option>
+                    {% for criterio in criterias %}
+                        <option>{{ criterio.valor_filtro }}</option>
+                    {% endfor %}
+                </select>
+
+                <div class="campos-horarios" style="margin-top: 10px; display: none;">
+                    <label>Início de Jornada:</label>
+                    <input type="time" class="campo-inicio-jornada"><br>
+                    <label>Fim de Jornada:</label>
+                    <input type="time" class="campo-fim-jornada"><br>
+                    <label>Início de Refeição:</label>
+                    <input type="time" class="campo-inicio-refeicao"><br>
+                    <label>Fim de Refeição:</label>
+                    <input type="time" class="campo-fim-refeicao">
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% endfor %}
+    </div>
+
+    <br>
+    <!-- Modal de Confirmação -->
+    <div id="modal-confirmacao" class="modal-overlay" style="display: none;">
+        <div class="modal-conteudo">
+            <button class="modal-close-btn" onclick="document.getElementById('modal-confirmacao').style.display='none'">✖</button>
+            <h2 style="margin: 5px">Confirmação de Análise</h2>
+
+            <div style="margin: 5px"><strong>Motorista:</strong> {{ motorist }} | <strong>Data Inicial:</strong> <span id="data-inicial-formatada"></span> |
+                <strong>Data Final:</strong> <span id="data-final-formatada"></span>
+            </div>
+
+            <div class="botoes-modal" style="margin: 5px">
+                <button class="botao-analise"
+                        onclick="enviarTabelaComoJSONFechamento('{{ motorist_id }}','{{ motorist }}','{{ truck_id }}','{{ plate }}','salvar')">
+                    ✅ Confirmar Análise
+                </button>
+            </div>
+
+            <div style="overflow-x: auto; margin-top: 20px">
+                <table id="tabela-confirmacao" class="tabela-jornada">
+                    <!-- Conteúdo inserido por JS -->
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Parâmetros e critérios vindos do backend (exemplo) -->
+<script>
+window.parametros = window.parametros || {{ parameters|tojson|safe }};
+window.criterios = window.criterios || {{ criterias|tojson|safe }};
+window.validPlates = {{ valid_plates|tojson|safe }};
+window.feriados = {{ holidays|tojson|safe }};
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+<script>
+// Funções auxiliares para cálculo de tempo
+function calcularTempo(inicio, fim) {
+    if (!inicio || !fim) return 0;
+    const i = dayjs(`2000-01-01T${inicio}`);
+    const f = dayjs(`2000-01-01T${fim}`);
+    let diff = f.diff(i, 'minute');
+    if (diff < 0) diff += 24 * 60; // Ajuste para virada de dia
+    return diff;
+}
+
+function formatarMinutos(minutos) {
+    if (isNaN(minutos)) return '00:00';
+    
+    // IMPORTANTE: Preservar valores negativos para banco de horas
+    const isNegative = minutos < 0;
+    const absMinutos = Math.abs(minutos);
+    const h = Math.floor(absMinutos / 60);
+    const m = absMinutos % 60;
+    const formatted = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    
+    // Retornar com sinal negativo preservado
+    const resultado = isNegative ? `-${formatted}` : formatted;
+    
+    // DEBUG EXTENSO para valores negativos
+    console.log(`⏰ formatarMinutos(${minutos}) -> "${resultado}" (negativo: ${isNegative})`);
+    console.log(`   - minutos original: ${minutos}`);
+    console.log(`   - isNegative: ${isNegative}`);
+    console.log(`   - absMinutos: ${absMinutos}`);
+    console.log(`   - h: ${h}, m: ${m}`);
+    console.log(`   - formatted: "${formatted}"`);
+    console.log(`   - resultado final: "${resultado}"`);
+    console.log(`   - resultado.includes('-'): ${resultado.includes('-')}`);
+    console.log(`   - resultado.startsWith('-'): ${resultado.startsWith('-')}`);
+    
+    return resultado;
+}
+
+function calcularTempoIntervalo(descansos) {
+    let total = 0;
+    descansos.forEach(d => {
+        total += calcularTempo(d.inicio, d.fim);
+    });
+    return total;
+}
+
+function calcularJornadaTotal(inicio, fim, tempoIntervalo, tempoRefeicao) {
+    return calcularTempo(inicio, fim) - tempoIntervalo - tempoRefeicao;
+}
+
+function calcularCargaHoraria(placa, diaSemana, data, feriados, classificacao = null) {
+    // IMPORTANTE: Sempre retornar um valor para que seja salvo no banco
+    
+    // 0. 🏷️ PRIORIDADE 0: Classificação Manual do Bloco
+    if (classificacao) {
+        switch (classificacao) {
+            case 'INVALIDO':
+                console.log(`🏷️ PRIORIDADE 0: Classificação INVÁLIDO = 0`);
+                return 0;
+            case 'GARAGEM':
+                console.log(`🏷️ PRIORIDADE 0: Classificação GARAGEM = 0`);
+                return 0;
+            case 'CARGA_DESCARGA':
+                console.log(`🏷️ PRIORIDADE 0: Classificação CARGA/DESCARGA = 0`);
+                return 0;
+            case 'VALIDO':
+                console.log(`🏷️ PRIORIDADE 0: Classificação VÁLIDO - continuando com regras normais`);
+                break;
+            default:
+                console.log(`🏷️ PRIORIDADE 0: Classificação desconhecida "${classificacao}" - continuando com regras normais`);
+                break;
+        }
+    }
+    
+    // 1. 🔧 PRIMEIRA PRIORIDADE: Critérios Especiais
+    if (window.criterios && Array.isArray(window.criterios)) {
+        const criterio = window.criterios.find(c => c.valor_filtro === placa);
+        if (criterio && criterio.carga_horaria_especial) {
+            if (criterio.carga_horaria_especial !== 'Padrão') {
+                // Critério especial com valor específico - usar o valor
+                console.log(`🔧 PRIORIDADE 1: Critério especial ${placa} = ${criterio.carga_horaria_especial}`);
+                const [horas] = criterio.carga_horaria_especial.split(':').map(Number);
+                return horas * 60; // Converter para minutos
+            } else {
+                // Critério especial = "Padrão" - calcular conforme regras
+                console.log(`🔧 PRIORIDADE 1: Critério especial ${placa} = "Padrão" - calculando conforme regras`);
+            }
+        }
+    }
+    
+    // 2. 🎉 SEGUNDA PRIORIDADE: Feriados (sempre 0)
+    const feriadosDatas = Array.isArray(feriados) && typeof feriados[0] === 'object'
+        ? feriados.map(f => f.data)
+        : feriados;
+    if (feriadosDatas.includes(data)) {
+        console.log(`🎉 PRIORIDADE 2: Feriado ${data} = 0`);
+        return 0;
+    }
+    
+    // 3. 📅 TERCEIRA PRIORIDADE: Dias da Semana
+    if (diaSemana.toUpperCase() === "DOMINGO") {
+        console.log(`📅 PRIORIDADE 3: Domingo = 0`);
+        return 0;
+    }
+    if (diaSemana.toUpperCase() === "SÁBADO") {
+        console.log(`📅 PRIORIDADE 3: Sábado = 4h`);
+        return 240; // 4h em minutos
+    }
+    
+    // Para demais dias da semana (úteis), sempre 8h
+    console.log(`📅 PRIORIDADE 3: Dia útil (${diaSemana}) = 8h`);
+    return 480; // 8h em minutos
+}
+
+// Função para converter minutos para formato HH:00
+function minutosParaTempo(minutos) {
+    if (minutos === 0) return "00:00";
+    const horas = Math.floor(minutos / 60);
+    return `${String(horas).padStart(2, '0')}:00`;
+}
+
+// Função para converter data de ISO (YYYY-MM-DD) para formato brasileiro (DD/MM/YYYY)
+function formatarDataBrasileira(data) {
+    if (!data) return '';
+    
+    // Se já está no formato brasileiro (DD/MM/YYYY ou DD-MM-YYYY), retorna como está
+    if (data.match(/^\d{2}[\/\-]\d{2}[\/\-]\d{4}$/)) {
+        return data.replace(/-/g, '/');
+    }
+    
+    // Se está no formato ISO (YYYY-MM-DD), converte
+    if (data.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [ano, mes, dia] = data.split('-');
+        return `${dia}/${mes}/${ano}`;
+    }
+    
+    return data; // Retorna como está se não reconhecer o formato
+}
+
+// Função para verificar se uma data é feriado e obter sua descrição
+function getFeriadoInfo(data, feriados) {
+    if (!feriados || !Array.isArray(feriados)) return null;
+    
+    // Normalizar o formato da data para DD-MM-YYYY
+    let dataNormalizada = data;
+    
+    // Se está no formato ISO (YYYY-MM-DD), converte para DD-MM-YYYY
+    if (data.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [ano, mes, dia] = data.split('-');
+        dataNormalizada = `${dia}-${mes}-${ano}`;
+    } else {
+        // Se está no formato DD/MM/YYYY, converte para DD-MM-YYYY
+        dataNormalizada = data.replace(/[\/]/g, '-');
+    }
+    
+    // Se feriados é array de objetos
+    if (feriados.length > 0 && typeof feriados[0] === 'object') {
+        const feriado = feriados.find(f => f.data === dataNormalizada);
+        return feriado ? { isHoliday: true, description: feriado.descricao } : { isHoliday: false };
+    }
+    
+    // Se feriados é array de strings (formato antigo)
+    const isHoliday = feriados.includes(dataNormalizada);
+    return { isHoliday, description: isHoliday ? 'Feriado' : null };
+}
+
+function calcularHENoturno(descansos, inicioJornada, fimJornada, blocoData) {
+    // blocoData no formato DD-MM-YYYY
+    const [dia, mes, ano] = blocoData.split('-');
+    const dataBase = `${ano}-${mes}-${dia}`;
+    // Período noturno do bloco: das 22:00 até 23:59 OU das 00:00 até 05:00
+    let inicioNoturno, fimNoturno;
+    if (inicioJornada <= '05:00') {
+        // Bloco do dia seguinte: 00:00 até 05:00
+        inicioNoturno = dayjs(`${dataBase}T00:00`);
+        fimNoturno = dayjs(`${dataBase}T05:00`);
+    } else {
+        // Bloco do dia atual: 22:00 até 23:59
+        inicioNoturno = dayjs(`${dataBase}T22:00`);
+        fimNoturno = dayjs(`${dataBase}T23:59`);
+    }
+    const inicio = dayjs(`${dataBase}T${inicioJornada}`);
+    const fim = dayjs(`${dataBase}T${fimJornada}`);
+    // Limita o período noturno ao intervalo do bloco
+    let noturnoInicio = inicio.isAfter(inicioNoturno) ? inicio : inicioNoturno;
+    let noturnoFim = fim.isBefore(fimNoturno) ? fim : fimNoturno;
+    if (noturnoFim.isBefore(noturnoInicio)) return 0;
+    let minutosNoturnos = 0;
+    for (let t = noturnoInicio; t.isBefore(noturnoFim); t = t.add(1, 'minute')) {
+        let emDescanso = descansos.some(d => {
+            let dInicio = dayjs(`${dataBase}T${d.inicio}`);
+            let dFim = dayjs(`${dataBase}T${d.fim}`);
+            if (dFim.isBefore(dInicio)) dFim = dFim.add(1, 'day');
+            return t.isSame(dInicio) || (t.isAfter(dInicio) && t.isBefore(dFim));
+        });
+        if (!emDescanso) minutosNoturnos++;
+    }
+    return minutosNoturnos;
+}
+
+function buscarValorDiaria(placa) {
+    const placaNorm = (placa || '').toUpperCase().replace(/\s+/g, '');
+
+    // Critérios personalizados PRIMEIRO
+    if (window.criterios && Array.isArray(window.criterios)) {
+        for (const crit of window.criterios) {
+            if (crit.valor_filtro && placaNorm.includes(crit.valor_filtro.toUpperCase().replace(/\s+/g, ''))) {
+                return parseFloat(crit.valor_diaria) || 0;
+            }
+        }
+    }
+
+    // Placa válida de caminhão
+    if (window.validPlates && window.validPlates.map(p => p.toUpperCase().replace(/\s+/g, '')).includes(placaNorm)) {
+        if (window.parametros && window.parametros.diaria_padrao) {
+            return parseFloat(window.parametros.diaria_padrao.valor) || 90;
+        }
+        return 90; // Default
+    }
+
+    // Se não for válida, retorna 0
+    return 0;
+}
+
+function calcularAjudaAlimentacao(placa, diaria) {
+    const placaNorm = (placa || '').toUpperCase().replace(/\s+/g, '');
+
+    // Critérios personalizados PRIMEIRO (incluindo GARAGEM)
+    if (window.criterios && Array.isArray(window.criterios)) {
+        for (const crit of window.criterios) {
+            if (crit.valor_filtro && placaNorm.includes(crit.valor_filtro.toUpperCase().replace(/\s+/g, ''))) {
+                return parseFloat(crit.valor_ajuda_alimentacao) || 0;
+            }
+        }
+    }
+
+    // Para placas válidas, usar o valor padrão
+    if (window.validPlates && window.validPlates.map(p => p.toUpperCase().replace(/\s+/g, '')).includes(placaNorm)) {
+        if (window.parametros && window.parametros.ajuda_alimentacao) {
+            return parseFloat(window.parametros.ajuda_alimentacao.valor) || 0;
+        }
+        return 0; // Default
+    }
+
+    // Se não for válida, retorna 0
+    return 0;
+}
+
+// Função auxiliar para buscar input[type=time] pelo título do bloco
+function getInputTimeByTitulo(bloco, titulo) {
+    const tables = bloco.querySelectorAll('table.tabela-jornada');
+    for (const table of tables) {
+        // Procura o h3 anterior à tabela
+        let h3 = table.previousElementSibling;
+        // Pode haver outros elementos entre o h3 e a tabela, então suba até encontrar um h3
+        while (h3 && h3.tagName !== 'H3') {
+            h3 = h3.previousElementSibling;
+        }
+        if (h3 && h3.textContent.includes(titulo)) {
+            // Retorna o primeiro input[type="time"] da tabela
+            const input = table.querySelector('input[type="time"]');
+            if (input) return input.value;
+        }
+    }
+    return '';
+}
+
+// Nova função para buscar horários válidos (onde está marcado "Válido")
+function getInputTimeByTituloValido(bloco, titulo) {
+    const tables = bloco.querySelectorAll('table.tabela-jornada');
+    for (const table of tables) {
+        // Procura o h3 anterior à tabela
+        let h3 = table.previousElementSibling;
+        // Pode haver outros elementos entre o h3 e a tabela, então suba até encontrar um h3
+        while (h3 && h3.tagName !== 'H3') {
+            h3 = h3.previousElementSibling;
+        }
+        if (h3 && h3.textContent.includes(titulo)) {
+            // Verificar se o select está marcado como "Válido"
+            const select = table.querySelector('select');
+            if (select && select.value === 'Válido') {
+                const input = table.querySelector('input[type="time"]');
+                if (input) return input.value;
+            }
+        }
+    }
+    return '';
+}
+
+function validarBlocosAntesDeMontarTabela() {
+    const blocos = document.querySelectorAll('.bloco-dia');
+    let erros = [];
+    blocos.forEach((bloco, idx) => {
+        const tituloBloco = bloco.querySelector('h2')?.innerText || `Bloco ${idx + 1}`;
+        
+        // Verificar se o bloco está marcado como INVÁLIDO
+        const classificacaoSelect = bloco.querySelector('.classificacao-select');
+        const isInvalido = classificacaoSelect && classificacaoSelect.value === 'INVALIDO';
+        
+        // Se for INVÁLIDO, pular todas as validações
+        if (isInvalido) {
+            console.log(`⏭️ Bloco ${idx + 1} marcado como INVÁLIDO - pulando validações`);
+            return; // Pular para o próximo bloco
+        }
+        
+        const alerta = bloco.querySelector('.campos-horarios');
+
+        if (alerta) {
+            // Bloco sem movimento: precisa de motivo
+            const motivo = bloco.querySelector('select.campo-observacao')?.value;
+            if (!motivo) erros.push(`${tituloBloco}: selecione um motivo para o dia sem movimento.`);
+        } else {
+            // Bloco com movimento: precisa de UM início e UM fim de jornada válidos
+            const tables = bloco.querySelectorAll("table.tabela-jornada");
+
+            // Início: tabelas 0 (movimento) e 1 (ignição)
+            const inicioSelects = [tables[0], tables[1]].map(tbl => tbl?.querySelector("select")).filter(Boolean);
+            // Fim: tabelas 2 (movimento) e 3 (ignição)
+            const fimSelects = [tables[2], tables[3]].map(tbl => tbl?.querySelector("select")).filter(Boolean);
+
+            const validosInicio = inicioSelects.filter(s => s.value === "Válido").length;
+            const validosFim = fimSelects.filter(s => s.value === "Válido").length;
+
+            if (validosInicio !== 1) erros.push(`${tituloBloco}: selecione apenas UM início de jornada válido (movimento ou ignição).`);
+            if (validosFim !== 1) erros.push(`${tituloBloco}: selecione apenas UM fim de jornada válido (movimento ou ignição).`);
+        }
+    });
+    return erros;
+}
+
+function montarTabelaConfirmacao() {
+    const feriados = window.feriados;
+    const plate = "{{ plate }}";
+    const blocos = document.querySelectorAll('.bloco-dia');
+    const tbody = document.createElement('tbody');
+    
+    blocos.forEach((bloco, idx) => {
+        // Verificar se o bloco está marcado como INVÁLIDO
+        const classificacaoSelect = bloco.querySelector('.classificacao-select');
+        const isInvalido = classificacaoSelect && classificacaoSelect.value === 'INVALIDO';
+        
+        // Se for INVÁLIDO, pular este bloco (não incluir na tabela de confirmação)
+        if (isInvalido) {
+            console.log(`⏭️ Bloco ${idx + 1} marcado como INVÁLIDO - excluindo da tabela de confirmação`);
+            return; // Pular para o próximo bloco
+        }
+        
+        const h2Text = bloco.querySelector('h2') ? bloco.querySelector('h2').textContent : '';
+        // Aceita data com / ou -
+        const dataMatch = h2Text.match(/(\d{2}[\/\-]\d{2}[\/\-]\d{4})/);
+        const data = dataMatch ? dataMatch[1] : '';
+        const diaSemanaMatch = h2Text.match(/\(([^)]+)\)/);
+        const diaSemana = diaSemanaMatch ? diaSemanaMatch[1] : '';
+        // Capturar horários de início e fim de jornada
+        let inicioJornada = '';
+        let fimJornada = '';
+        
+        // Verificar se há campos de horário (bloco sem movimento)
+        const camposHorarios = bloco.querySelector('.campos-horarios');
+        // Buscar início e fim de refeição marcados pelo usuário
+        let inicioRefeicao = '';
+        let fimRefeicao = '';
+        
+        if (camposHorarios) {
+            // Para GARAGEM, capturar início e fim de jornada
+            const inputs = camposHorarios.querySelectorAll('input[type="time"]');
+            if (inputs.length >= 2) {
+                inicioJornada = inputs[0].value || '';
+                fimJornada = inputs[1].value || '';
+            }
+            // Para GARAGEM, capturar início e fim de refeição
+            if (inputs.length >= 4) {
+                inicioRefeicao = inputs[2].value || '';
+                fimRefeicao = inputs[3].value || '';
+            }
+        } else {
+            // Usar a nova função que busca apenas horários válidos
+            inicioJornada = getInputTimeByTituloValido(bloco, 'Início de Jornada');
+            fimJornada = getInputTimeByTituloValido(bloco, 'Fim de Jornada');
+            
+            // Para blocos com movimento, buscar nas tabelas
+            // Para blocos com movimento, buscar nas tabelas
+            const linhasParadas = bloco.querySelectorAll('table.tabela-jornada:last-of-type tr');
+            linhasParadas.forEach(linha => {
+                const select = linha.querySelector('select');
+                if (select && select.value === 'REFEIÇÃO') {
+                    inicioRefeicao = linha.querySelector('.campo-inicio')?.value || '';
+                    fimRefeicao = linha.querySelector('.campo-fim')?.value || '';
+                }
+            });
+        }
+        const observacao = bloco.querySelector('select.campo-observacao')?.value || '';
+        
+        // Capturar observações do usuário
+        const observacoesTexto = document.getElementById(`observacoes-texto-${idx}`)?.value || '';
+        
+        // Validação para GARAGEM e CARGA/DESCARGA: verificar se o tempo de refeição está dentro do tempo de jornada
+        if (observacao && (observacao.toUpperCase().includes('GARAGEM') || observacao.toUpperCase().includes('CARGA/DESCARGA')) && inicioRefeicao && fimRefeicao && inicioJornada && fimJornada) {
+            const inicioJornadaMin = tempoParaMinutos(inicioJornada);
+            const fimJornadaMin = tempoParaMinutos(fimJornada);
+            const inicioRefeicaoMin = tempoParaMinutos(inicioRefeicao);
+            const fimRefeicaoMin = tempoParaMinutos(fimRefeicao);
+            
+            // Verificar se a refeição está dentro da jornada
+            if (inicioRefeicaoMin < inicioJornadaMin || fimRefeicaoMin > fimJornadaMin) {
+                console.warn(`Aviso: Tempo de refeição (${inicioRefeicao}-${fimRefeicao}) está fora do tempo de jornada (${inicioJornada}-${fimJornada}) para ${observacao.toUpperCase()}`);
+                // Opcional: mostrar alerta para o usuário
+                if (!window.refeicaoForaJornadaAlertado) {
+                    alert(`Aviso: Tempo de refeição (${inicioRefeicao}-${fimRefeicao}) está fora do tempo de jornada (${inicioJornada}-${fimJornada}) para ${observacao.toUpperCase()}`);
+                    window.refeicaoForaJornadaAlertado = true;
+                }
+            }
+        }
+        
+        // Descansos: pegue todos os pares de início/fim de descanso
+        const descansos = [];
+        bloco.querySelectorAll('table.tabela-jornada tr').forEach(tr => {
+            const select = tr.querySelector('select');
+            if (select && select.value === 'DESCANSO') {
+                const inicio = tr.querySelector('input.campo-inicio')?.value || '';
+                const fim = tr.querySelector('input.campo-fim')?.value || '';
+                descansos.push({inicio, fim});
+            }
+        });
+        // Corrigir valor da placa para cada bloco
+        let placaTabela = plate;
+        if (bloco.querySelector('.campos-horarios') || bloco.innerHTML.includes('Não houve movimento')) {
+            // Se for bloco sem movimento, placa = observacao (motivo)
+            placaTabela = observacao;
+        }
+        
+        // Obter classificação do bloco para cálculos
+        const classificacaoBloco = obterClassificacaoBloco(idx);
+        
+        // Cálculos
+        const tempoRefeicao = calcularTempo(inicioRefeicao, fimRefeicao);
+        const tempoIntervalo = calcularTempoIntervalo(descansos);
+        const jornadaTotal = calcularJornadaTotal(inicioJornada, fimJornada, tempoIntervalo, tempoRefeicao);
+        const cargaHoraria = calcularCargaHoraria(placaTabela, diaSemana, data, feriados, classificacaoBloco);
+        const heNotMin = calcularHENoturno(descansos, inicioJornada, fimJornada, data.replace(/[\/]/g, '-'));
+        const heNot = heNotMin;
+        const adicionalNoturno = heNotMin;
+        const hextra50 = jornadaTotal - cargaHoraria;
+        // hextra100 e adicional noturno são manuais ou iguais ao heNot
+        // Monta a linha
+        const diaria = buscarValorDiaria(placaTabela);
+        const ajudaAlimentacao = calcularAjudaAlimentacao(placaTabela, diaria);
+        // Verificar se a data é feriado
+        const feriadoInfo = getFeriadoInfo(data, feriados);
+        
+        // Monta a linha
+        const tr = document.createElement('tr');
+        tr.classList.add('new-line');
+        
+        // Aplicar estilo de feriado se necessário
+        if (feriadoInfo && feriadoInfo.isHoliday) {
+            tr.classList.add('holiday-row');
+            tr.setAttribute('data-holiday', `Feriado: ${feriadoInfo.description}`);
+            tr.setAttribute('title', `Feriado: ${feriadoInfo.description}`);
+        }
+        
+        // Determinar cor e texto da classificação
+        let classificacaoDisplay = '';
+        let classificacaoClass = '';
+        if (classificacaoBloco) {
+            switch (classificacaoBloco) {
+                case 'VALIDO':
+                    classificacaoDisplay = 'VÁLIDO';
+                    classificacaoClass = 'badge-valid';
+                    break;
+                case 'GARAGEM':
+                    classificacaoDisplay = 'GARAGEM';
+                    classificacaoClass = 'badge-garagem';
+                    break;
+                case 'CARGA_DESCARGA':
+                    classificacaoDisplay = 'CARGA/DESCARGA';
+                    classificacaoClass = 'badge-carga-descarga';
+                    break;
+                case 'INVALIDO':
+                    classificacaoDisplay = 'INVÁLIDO';
+                    classificacaoClass = 'badge-invalid';
+                    break;
+                default:
+                    classificacaoDisplay = 'VÁLIDO';
+                    classificacaoClass = 'badge-valid';
+                    break;
+            }
+        } else {
+            classificacaoDisplay = 'VÁLIDO';
+            classificacaoClass = 'badge-valid';
+        }
+        
+        tr.innerHTML = `
+            <td>${placaTabela}</td>
+            <td>${data}</td>
+            <td>${diaSemana}</td>
+            <td><span class="badge-classificacao ${classificacaoClass}" style="padding: 2px 6px; border-radius: 8px; font-size: 11px; font-weight: bold; color: white;">${classificacaoDisplay}</span></td>
+            <td>${inicioJornada}</td>
+            <td>${inicioRefeicao}</td>
+            <td>${fimRefeicao}</td>
+            <td>${fimJornada}</td>
+            <td>${observacao}${observacoesTexto ? ' - ' + observacoesTexto : ''}</td>
+            <td>${formatarMinutos(tempoRefeicao)}</td>
+            <td>${formatarMinutos(tempoIntervalo)}</td>
+            <td>${formatarMinutos(jornadaTotal)}</td>
+            <td><input type="time" value="${formatarMinutos(cargaHoraria)}" onchange="recalcularLinha(this)"></td>
+            <td>${formatarMinutos(hextra50)}</td>
+            <td><input type="time" value="00:00" onchange="recalcularLinha(this)"></td>
+            <td>${formatarMinutos(heNot)}</td>
+            <td>${formatarMinutos(adicionalNoturno)}</td>
+            <td>R$ ${ajudaAlimentacao.toFixed(2).replace('.', ',')}</td>
+            <td>R$ ${diaria.toFixed(2).replace('.', ',')}</td>
+            ${descansos.map((d, i) => `<td>${d.inicio}</td><td>${d.fim}</td>`).join("")}
+        `;
+        tbody.appendChild(tr);
+    });
+    // Monta o cabeçalho
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+      <tr>
+        <th>Placa</th>
+        <th>Data</th>
+        <th>Dia da Semana</th>
+        <th>Classificação</th>
+        <th>Início Jornada</th>
+        <th>Início Refeição</th>
+        <th>Fim Refeição</th>
+        <th>Fim de Jornada</th>
+        <th>Observação</th>
+        <th>Tempo Refeição</th>
+        <th>Tempo Intervalo</th>
+        <th>H. Trabalhadas</th>
+        <th>Carga Horária</th>
+        <th>H.extra 50%</th>
+        <th>H.extra 100%</th>
+        <th>H.E. Not</th>
+        <th>Adic. Noturno</th>
+        <th>Ajuda Alimentação</th>
+        <th>Diária</th>
+        <th>Início Descanso 1</th>
+        <th>Fim Descanso 1</th>
+        <th>Início Descanso 2</th>
+        <th>Fim Descanso 2</th>
+        <th>Início Descanso 3</th>
+        <th>Fim Descanso 3</th>
+        <th>Início Descanso 4</th>
+        <th>Fim Descanso 4</th>
+        <th>Início Descanso 5</th>
+        <th>Fim Descanso 5</th>
+        <th>Início Descanso 6</th>
+        <th>Fim Descanso 6</th>
+        <th>Início Descanso 7</th>
+        <th>Fim Descanso 7</th>
+        <th>Início Descanso 8</th>
+        <th>Fim Descanso 8</th>
+      </tr>
+    `;
+    // Atualiza a tabela do modal
+    const tabela = document.getElementById('tabela-confirmacao');
+    tabela.innerHTML = '';
+    tabela.appendChild(thead);
+    tabela.appendChild(tbody);
+
+    attachInputListeners(); // habilita recalculo dinâmico
+}
+
+// === Recalculo dinâmico ===
+function tempoParaMinutos(valor) {
+    if (!valor || !valor.includes(':')) return 0;
+    const [h, m] = valor.split(':').map(Number);
+    return h * 60 + m;
+}
+function minutosParaTempo(min) {
+    // Tratar valores negativos
+    const isNegative = min < 0;
+    const absMin = Math.abs(min);
+    const h = String(Math.floor(absMin / 60)).padStart(2, '0');
+    const m = String(absMin % 60).padStart(2, '0');
+    return isNegative ? `-${h}:${m}` : `${h}:${m}`;
+}
+
+function atualizarCalculosFechamento() {
+    const linhas = document.querySelectorAll('#tabela-confirmacao tbody tr');
+    if (!linhas) return;
+    linhas.forEach(linha => {
+        const cells = linha.querySelectorAll('td');
+        const get = idx => cells[idx]?.querySelector('input')?.value || cells[idx]?.textContent.trim();
+        // Índices fixos baseado no thead
+        const IDX = {
+            iniJornada: 3,
+            inRefeicao: 4,
+            fimRefeicao: 5,
+            fimJornada: 6,
+            tempoRefeicao: 8,
+            tempoIntervalo: 9,
+            jornadaTotal: 10,
+            cargaHoraria: 11,
+            hextra50: 12
+        };
+        // Descansos começam na coluna 18 (index 18) pares até 33
+        const tempoRef = Math.max(0, tempoParaMinutos(get(IDX.fimRefeicao)) - tempoParaMinutos(get(IDX.inRefeicao)));
+        if (cells[IDX.tempoRefeicao]) cells[IDX.tempoRefeicao].textContent = minutosParaTempo(tempoRef);
+        // Intervalos de descanso
+        let totalDesc = 0;
+        for (let base = 18; base <= 33; base += 2) {
+            const ini = get(base);
+            const fim = get(base + 1);
+            totalDesc += Math.max(0, tempoParaMinutos(fim) - tempoParaMinutos(ini));
+        }
+        if (cells[IDX.tempoIntervalo]) cells[IDX.tempoIntervalo].textContent = minutosParaTempo(totalDesc);
+        // H. Trabalhadas
+        let dur = tempoParaMinutos(get(IDX.fimJornada)) - tempoParaMinutos(get(IDX.iniJornada));
+        if (dur < 0) dur += 1440;
+        const jornadaMin = Math.max(0, dur - totalDesc - tempoRef);
+        if (cells[IDX.jornadaTotal]) cells[IDX.jornadaTotal].textContent = minutosParaTempo(jornadaMin);
+        // Hora extra 50% (recalcula: jornada - carga horária)
+        const cargaMin = tempoParaMinutos(get(IDX.cargaHoraria));
+        const hextraMin = jornadaMin - cargaMin;
+        if (cells[IDX.hextra50]) cells[IDX.hextra50].textContent = minutosParaTempo(hextraMin);
+    });
+}
+
+function attachInputListeners() {
+    const tabela = document.getElementById('tabela-confirmacao');
+    if (!tabela) return;
+    tabela.addEventListener('change', (e) => {
+        if (e.target.tagName === 'INPUT') {
+            atualizarCalculosFechamento();
+        }
+    });
+}
+
+// Função para salvar análise (chamada pelo botão Pré-visualização)
+function salvarAnalise(motoristId, plate) {
+    console.log('🔍 Função salvarAnalise chamada com:', { motoristId, plate });
+    abrirModalConfirmacao();
+}
+
+// Integração: chama montarTabelaConfirmacao ao abrir o modal
+function abrirModalConfirmacao() {
+    const erros = validarBlocosAntesDeMontarTabela();
+    if (erros.length > 0) {
+        alert('Preencha as informações obrigatórias antes de confirmar:\n\n' + erros.join('\n'));
+        return;
+    }
+    montarTabelaConfirmacao();
+    
+    // Formatar datas inicial e final no topo do modal
+    const dataInicial = "{{ data_inicial }}";
+    const dataFinal = "{{ data_final }}";
+    document.getElementById('data-inicial-formatada').textContent = formatarDataBrasileira(dataInicial);
+    document.getElementById('data-final-formatada').textContent = formatarDataBrasileira(dataFinal);
+    
+    document.getElementById('modal-confirmacao').style.display = 'block';
+}
+
+// Substitui o onclick do botão de pré-visualização para abrir o modal corretamente
+const btnPreVisualizacao = document.querySelector('.btn-pre-visualizacao');
+if (btnPreVisualizacao) {
+    btnPreVisualizacao.onclick = function() {
+        abrirModalConfirmacao();
+    };
+}
+
+// Função envio fechamento
+async function enviarTabelaComoJSONFechamento(mid, mname, tid, plate, acao='salvar') {
+    try {
+        const tabelaJSON = await extrairTabelaComoJSON(true);
+        
+        // Capturar observações e cálculos de carga horária especial de todos os blocos
+        const observacoes = {};
+        const calculosEspeciais = {};
+        const blocosInvalidos = []; // Lista de datas de blocos marcados como INVÁLIDO
+        const blocos = document.querySelectorAll('.bloco-dia');
+        
+        blocos.forEach((bloco, idx) => {
+            // Verificar se o bloco está marcado como INVÁLIDO
+            const classificacaoSelect = bloco.querySelector('.classificacao-select');
+            const isInvalido = classificacaoSelect && classificacaoSelect.value === 'INVALIDO';
+            
+            if (isInvalido) {
+                // Capturar a data do bloco INVÁLIDO
+                const h2Text = bloco.querySelector('h2') ? bloco.querySelector('h2').textContent : '';
+                const dataMatch = h2Text.match(/(\d{2}[\/\-]\d{2}[\/\-]\d{4})/);
+                const data = dataMatch ? dataMatch[1] : '';
+                
+                if (data) {
+                    // Converter data para formato DD-MM-YYYY se necessário
+                    const dataFormatada = data.replace(/\//g, '-');
+                    blocosInvalidos.push(dataFormatada);
+                    console.log(`📋 Bloco ${idx + 1} marcado como INVÁLIDO - data: ${dataFormatada}`);
+                }
+                return; // Pular processamento deste bloco
+            }
+            
+            // NOVA LÓGICA: Adicionar classificação nas observações se for GARAGEM ou CARGA/DESCARGA
+            let observacoesTexto = document.getElementById(`observacoes-texto-${idx}`)?.value || '';
+            const classificacao = classificacaoSelect ? classificacaoSelect.value : '';
+            
+            if (classificacao === 'GARAGEM' || classificacao === 'CARGA_DESCARGA') {
+                // Adicionar a classificação nas observações se não estiver presente
+                const classificacaoDisplay = classificacao === 'GARAGEM' ? 'GARAGEM' : 'CARGA/DESCARGA';
+                
+                if (!observacoesTexto.toUpperCase().includes(classificacaoDisplay)) {
+                    // Se já há observações, adicionar a classificação no início
+                    if (observacoesTexto.trim()) {
+                        observacoesTexto = `${classificacaoDisplay} - ${observacoesTexto.trim()}`;
+                    } else {
+                        observacoesTexto = classificacaoDisplay;
+                    }
+                    console.log(`🏷️ Adicionando classificação "${classificacaoDisplay}" nas observações do bloco ${idx + 1}`);
+                }
+            }
+            
+            // SEMPRE capturar observações se existirem
+            if (observacoesTexto.trim()) {
+                observacoes[idx] = observacoesTexto.trim();
+            }
+            
+            // CAPTURAR CÁLCULOS DE CARGA HORÁRIA ESPECIAL - APENAS PARA BLOCOS SEM MOVIMENTO!
+            // Verificar se é um bloco sem movimento (que precisa de critérios especiais)
+            const camposHorarios = bloco.querySelector('.campos-horarios');
+            const campoObservacao = bloco.querySelector('select.campo-observacao');
+            
+            if (camposHorarios || campoObservacao) {
+                // É um bloco SEM MOVIMENTO - precisa de critérios especiais
+                console.log(`🔍 DEBUG - Bloco ${idx}: é bloco SEM MOVIMENTO, verificando critérios especiais`);
+                
+                let motivo = '';
+                
+                // 1. Tentar pegar do campo de observação (se existir)
+                if (observacoesTexto.trim()) {
+                    motivo = observacoesTexto.trim().toUpperCase();
+                    console.log(`🔍 DEBUG - Bloco ${idx}: usando observação como motivo: "${motivo}"`);
+                } else if (campoObservacao && campoObservacao.value) {
+                    // 2. Se não há observação, usar o campo de observação do bloco
+                    motivo = campoObservacao.value.toUpperCase();
+                    console.log(`🔍 DEBUG - Bloco ${idx}: usando campo observação como motivo: "${motivo}"`);
+                } else {
+                    // 3. Se não há motivo definido, pular este bloco
+                    console.log(`🔍 DEBUG - Bloco ${idx}: sem motivo definido, pulando...`);
+                    return; // Pular para o próximo bloco
+                }
+                
+                console.log(`🔍 DEBUG - Processando bloco ${idx}: motivo="${motivo}"`);
+                
+                // Verificar se é um critério especial que pode ter carga horária personalizada
+                if (window.criterios && Array.isArray(window.criterios)) {
+                    console.log(`✅ DEBUG - Critérios disponíveis:`, window.criterios);
+                    
+                    const criterio = window.criterios.find(c => c.valor_filtro === motivo);
+                    console.log(`🔍 DEBUG - Critério encontrado para "${motivo}":`, criterio);
+                    
+                    if (criterio && criterio.carga_horaria_especial) {
+                        console.log(`🎯 DEBUG - Critério encontrado: ${motivo} = ${criterio.carga_horaria_especial}`);
+                        
+                        // SEMPRE calcular e salvar, independente se é "Padrão" ou valor específico
+                        let cargaHorariaMinutos;
+                        
+                        if (criterio.carga_horaria_especial !== 'Padrão') {
+                            // Usar valor específico configurado
+                            const [horas] = criterio.carga_horaria_especial.split(':').map(Number);
+                            cargaHorariaMinutos = horas * 60;
+                            console.log(`🔧 Usando valor específico: ${criterio.carga_horaria_especial} = ${cargaHorariaMinutos}min`);
+                        } else {
+                            // Calcular conforme regras padrão (dia da semana, feriados)
+                            // Buscar a data do bloco para cálculo correto
+                            const h2Text = bloco.querySelector('h2')?.textContent || '';
+                            const dataMatch = h2Text.match(/(\d{2}[\/\-]\d{2}[\/\-]\d{4})/);
+                            const data = dataMatch ? dataMatch[1] : '';
+                            const diaSemanaMatch = h2Text.match(/\(([^)]+)\)/);
+                            const diaSemana = diaSemanaMatch ? diaSemanaMatch[1] : '';
+                            
+                            cargaHorariaMinutos = calcularCargaHoraria(motivo, diaSemana, data, window.feriados);
+                            console.log(`🔧 Calculando conforme regras padrão para ${diaSemana} ${data}: ${cargaHorariaMinutos}min`);
+                        }
+                        
+                        // Para critérios especiais, a jornada é 0 (não trabalhou)
+                        const jornadaTotal = 0; // 0 horas (não trabalhou)
+                        // IMPORTANTE: Permitir valores negativos para banco de horas
+                        const he50Minutos = jornadaTotal - cargaHorariaMinutos;
+                        console.log(`🔧 DEBUG - Cálculo HE50%: jornadaTotal=${jornadaTotal} - cargaHoraria=${cargaHorariaMinutos} = ${he50Minutos}min`);
+                        
+                        // Usar formatarMinutos para preservar valores negativos
+                        const he50Formatado = formatarMinutos(he50Minutos);
+                        
+                        // Converter carga horária para formato HH:00
+                        const cargaHorariaFormatada = formatarMinutos(cargaHorariaMinutos);
+                        
+                        console.log(`🔧 Cálculo especial para ${motivo}: Carga=${cargaHorariaFormatada}, HE50%=${he50Formatado}`);
+                        
+                        // DEBUG: Verificar se os valores negativos estão sendo preservados
+                        console.log(`🔍 DEBUG - Verificação de valores negativos:`);
+                        console.log(`   - he50Minutos original: ${he50Minutos}`);
+                        console.log(`   - he50Formatado: "${he50Formatado}"`);
+                        console.log(`   - he50Formatado.includes('-'): ${he50Formatado.includes('-')}`);
+                        console.log(`   - he50Formatado.startsWith('-'): ${he50Formatado.startsWith('-')}`);
+                        
+                        calculosEspeciais[idx] = {
+                            carga_horaria_esp: cargaHorariaFormatada,
+                            hextra_50_esp: he50Formatado
+                        };
+                        
+                        // DEBUG: Mostrar no console o que está sendo calculado
+                        console.log(`📊 DEBUG - Critério encontrado:`, criterio);
+                        console.log(`📊 DEBUG - Cálculo especial:`, calculosEspeciais[idx]);
+                        console.log(`📊 DEBUG - Tipo de dados: carga_horaria_esp=${typeof cargaHorariaFormatada}, hextra_50_esp=${typeof he50Formatado}`);
+                    } else {
+                        console.log(`⚠️ DEBUG - Critério "${motivo}" não encontrado nos critérios`);
+                    }
+                } else {
+                    console.log(`❌ DEBUG - Critérios não estão disponíveis ou não são array`);
+                    console.log(`   - window.criterios:`, window.criterios);
+                    console.log(`   - tipo:`, typeof window.criterios);
+                }
+            } else {
+                // É um bloco COM MOVIMENTO - não precisa de critérios especiais
+                console.log(`🔍 DEBUG - Bloco ${idx}: é bloco COM MOVIMENTO, não precisa de critérios especiais`);
+            }
+        });
+        
+        const payload = {
+            motorist_id: mid,
+            motorist_name: mname,
+            truck_id: tid,
+            plate: plate,
+            acao: acao,
+            tabela: JSON.parse(tabelaJSON),
+            observacoes: observacoes,
+            calculos_especiais: calculosEspeciais,
+            blocos_invalidos: blocosInvalidos // Datas de blocos marcados como INVÁLIDO
+        };
+        
+        // DEBUG: Mostrar payload completo no console
+        console.log(`🚀 DEBUG - Payload completo:`, payload);
+        console.log(`🚀 DEBUG - Cálculos especiais:`, calculosEspeciais);
+        console.log(`🚀 DEBUG - Observações:`, observacoes);
+        
+        // DEBUG: Verificar se os critérios estão disponíveis
+        console.log(`🔍 DEBUG - Critérios disponíveis:`, window.criterios);
+        console.log(`🔍 DEBUG - Tipo de critérios:`, typeof window.criterios);
+        console.log(`🔍 DEBUG - Critérios é array?`, Array.isArray(window.criterios));
+
+        // Função para fazer o envio
+        function enviarDados(substituir = false) {
+            if (substituir) {
+                payload.substituir = true;
+            }
+
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: "/api/closure/save-table",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(payload),
+                    statusCode: {
+                        // Trata 409 como um caso especial, não como erro
+                        409: function(jqXHR) {
+                            const response = jqXHR.responseJSON;
+                            const conflitos = response.conflitos_detalhados || response.conflitos || [];
+                            
+                            // Usar a função utilitária para mostrar conflitos formatados
+                            showConflictModal(conflitos, function() {
+                                // Se confirmou, envia novamente com substituir=true
+                                enviarDados(true)
+                                    .then(resolve)
+                                    .catch(reject);
+                            }, function() {
+                                resolve(false); // Usuário cancelou
+                            });
+                        }
+                    },
+                    success: function(response) {
+                        // Verificar se há dados de validação
+                        if (response && response.validation) {
+                            // Aguardar um pouco para a notificação de validação aparecer primeiro
+                            setTimeout(() => {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Sucesso',
+                                    text: response.mensagem || 'Dados salvos!'
+                                }).then(() => {
+                                    window.location.href = '/reports';
+                                });
+                            }, 2000); // Aguardar 2 segundos para a validação ser vista
+                        } else {
+                            // Se não há validação, mostrar sucesso imediatamente
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sucesso',
+                                text: response.mensagem || 'Dados salvos!'
+                            }).then(() => {
+                                window.location.href = '/reports';
+                            });
+                        }
+                        resolve(true);
+                    },
+                    error: function(jqXHR) {
+                        // Apenas outros erros que não sejam 409
+                        if (jqXHR.status !== 409) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erro',
+                                text: 'Erro ao salvar dados.'
+                            });
+                            reject(new Error('Erro ao salvar dados'));
+                        }
+                    }
+                });
+            });
+        }
+
+        // Faz o primeiro envio
+        await enviarDados();
+
+    } catch (err) {
+        console.error("Erro ao enviar tabela:", err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: err.message || 'Falha ao salvar dados'
+        });
+    }
+}
+
+// Função para recalcular linha quando valores são alterados
+function recalcularLinha(input) {
+    const tr = input.closest('tr');
+    const jornadaTotal = parseInt(tr.cells[10].textContent.split(':')[0]) * 60 + parseInt(tr.cells[10].textContent.split(':')[1]);
+    const cargaHoraria = parseInt(input.value.split(':')[0]) * 60 + parseInt(input.value.split(':')[1]);
+    const heNot = parseInt(tr.cells[14].textContent.split(':')[0]) * 60 + parseInt(tr.cells[14].textContent.split(':')[1]);
+    
+    // Calcular H.extra 50%: H. Trabalhadas - Carga Horária
+    const hextra50 = jornadaTotal - cargaHoraria;
+    
+    // Atualizar o valor na tabela
+    tr.cells[12].textContent = formatarMinutos(hextra50);
+}
+
+// Função para adicionar event listeners às linhas existentes da tabela de análise
+function adicionarEventListenersTabelaAnalise() {
+    const tabelas = document.querySelectorAll('table[id^="tabela-analise-"]');
+    tabelas.forEach(tabela => {
+        const linhas = tabela.querySelectorAll('tr:not(:first-child)'); // Excluir o cabeçalho
+        linhas.forEach(linha => {
+            const inicioInput = linha.querySelector('.campo-inicio');
+            const fimInput = linha.querySelector('.campo-fim');
+            
+            if (inicioInput) {
+                inicioInput.addEventListener('change', function() {
+                    recalcularTempoLinha(this);
+                });
+            }
+            
+            if (fimInput) {
+                fimInput.addEventListener('change', function() {
+                    recalcularTempoLinha(this);
+                });
+            }
+        });
+    });
+}
+
+// Função para adicionar nova linha na tabela de análise
+function adicionarLinhaAnalise(blocoIndex) {
+    const tabela = document.getElementById(`tabela-analise-${blocoIndex}`);
+    if (!tabela) {
+        console.error(`Tabela não encontrada para o bloco ${blocoIndex}`);
+        return;
+    }
+    
+    // Criar nova linha
+    const novaLinha = document.createElement('tr');
+    novaLinha.innerHTML = `
+        <td><input type="time" class="campo-inicio" value=""></td>
+        <td><input type="time" class="campo-fim" value=""></td>
+        <td><input type="text" readonly value=""></td>
+        <td><input type="text" readonly value=""></td>
+        <td><a href="#" target="_blank">Abrir</a></td>
+        <td><input type="time" value="" class="campo-tempo" readonly/></td>
+        <td>
+            <select>
+                <option></option>
+                <option>REFEIÇÃO</option>
+                <option>DESCANSO</option>
+            </select>
+        </td>
+    `;
+    
+    // Adicionar a linha no final da tabela (após todas as linhas existentes)
+    tabela.appendChild(novaLinha);
+    
+    // Adicionar event listeners para os novos campos
+    const inputs = novaLinha.querySelectorAll('input[type="time"]');
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            recalcularTempoLinha(this);
+        });
+    });
+    
+    // Adicionar event listener para o select
+    const select = novaLinha.querySelector('select');
+    if (select) {
+        select.addEventListener('change', function() {
+            // Aqui você pode adicionar lógica adicional se necessário
+        });
+    }
+    
+    console.log(`Nova linha adicionada ao bloco ${blocoIndex}`);
+}
+
+// Função para recalcular o tempo de uma linha
+function recalcularTempoLinha(input) {
+    const tr = input.closest('tr');
+    const inicioInput = tr.querySelector('.campo-inicio');
+    const fimInput = tr.querySelector('.campo-fim');
+    const tempoInput = tr.querySelector('.campo-tempo');
+    
+    if (inicioInput && fimInput && tempoInput) {
+        const inicio = inicioInput.value;
+        const fim = fimInput.value;
+        
+        if (inicio && fim) {
+            const inicioMinutos = tempoParaMinutos(inicio);
+            const fimMinutos = tempoParaMinutos(fim);
+            let diferenca = fimMinutos - inicioMinutos;
+            
+            // Se o fim for menor que o início, assumir que é do dia seguinte
+            if (diferenca < 0) {
+                diferenca += 24 * 60; // Adicionar 24 horas em minutos
+            }
+            
+            tempoInput.value = minutosParaTempo(diferenca);
+        }
+    }
+}
+
+// Inicializar event listeners quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    adicionarEventListenersTabelaAnalise();
+    inicializarObservacoes();
+    adicionarEventListenersValidacao();
+});
+
+// Função para inicializar as observações
+function inicializarObservacoes() {
+    const textareas = document.querySelectorAll('.observacoes-textarea');
+    textareas.forEach(textarea => {
+        const blocoIndex = textarea.id.split('-').pop();
+        const contador = document.getElementById(`caracteres-restantes-${blocoIndex}`);
+        
+        // Atualizar contador inicial
+        if (contador) {
+            contador.textContent = 100 - textarea.value.length;
+        }
+        
+        // Adicionar event listener para contador de caracteres
+        textarea.addEventListener('input', function() {
+            if (contador) {
+                contador.textContent = 100 - this.value.length;
+            }
+        });
+    });
+}
+
+// Função para mostrar/ocultar campo de observações
+function toggleObservacoes(blocoIndex) {
+    const container = document.getElementById(`observacoes-container-${blocoIndex}`);
+    const textarea = document.getElementById(`observacoes-texto-${blocoIndex}`);
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        if (textarea) {
+            textarea.focus();
+        }
+    } else {
+        container.style.display = 'none';
+    }
+}
+
+// Função para adicionar event listeners nos campos de validação
+function adicionarEventListenersValidacao() {
+    const selects = document.querySelectorAll('select');
+    selects.forEach(select => {
+        // Aplicar destaque inicial se já tiver valor
+        aplicarDestaqueValidacao(select);
+        
+        // Adicionar event listener para mudanças
+        select.addEventListener('change', function() {
+            aplicarDestaqueValidacao(this);
+        });
+    });
+}
+
+// Função para aplicar destaque nos campos de validação
+function aplicarDestaqueValidacao(select) {
+    const valor = select.value;
+    const temValor = valor && valor !== '' && valor !== 'Selecione';
+    
+    if (temValor) {
+        select.style.backgroundColor = '#e8f5e8';
+        select.style.borderColor = '#28a745';
+        select.style.color = '#155724';
+        select.style.fontWeight = '600';
+    } else {
+        select.style.backgroundColor = '';
+        select.style.borderColor = '';
+        select.style.color = '';
+        select.style.fontWeight = '';
+    }
+}
+
+// Opcional: fecha o modal ao clicar no X (já existe no HTML)
+
+// ============================================================================
+// JavaScript para Classificação de Blocos (Fase 3)
+// ============================================================================
+
+// Mapeamento de classificações para labels e cores
+const CLASSIFICATION_CONFIG = {
+    'VALIDO': {
+        label: 'VÁLIDO',
+        badgeClass: 'badge-valid',
+        borderClass: 'border-valid',
+        color: '#28a745'
+    },
+    'CARGA_DESCARGA': {
+        label: 'CARGA/DESCARGA',
+        badgeClass: 'badge-carga-descarga',
+        borderClass: 'border-carga-descarga',
+        color: '#ffc107'
+    },
+    'GARAGEM': {
+        label: 'GARAGEM',
+        badgeClass: 'badge-garagem',
+        borderClass: 'border-garagem',
+        color: '#17a2b8'
+    },
+    'INVALIDO': {
+        label: 'INVÁLIDO',
+        badgeClass: 'badge-invalid',
+        borderClass: 'border-invalid',
+        color: '#dc3545'
+    }
+};
+
+// Inicializar classificações quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Inicializando sistema de classificação de blocos...');
+    inicializarClassificacoes();
+});
+
+// Função para inicializar todas as classificações
+async function inicializarClassificacoes() {
+    const selects = document.querySelectorAll('.classificacao-select');
+    
+    for (const select of selects) {
+        await carregarClassificacao(select);
+        adicionarEventListenersClassificacao(select);
+    }
+    
+    console.log(`✅ ${selects.length} classificações inicializadas`);
+}
+
+// Função para carregar classificação de um bloco
+async function carregarClassificacao(select) {
+    const motoristId = select.dataset.motoristId;
+    const date = select.dataset.date;
+    const truckId = select.dataset.truckId;
+    
+    try {
+        const params = new URLSearchParams({
+            motorist_id: motoristId,
+            date: date
+        });
+        
+        if (truckId && truckId !== 'None') {
+            params.append('truck_id', truckId);
+        }
+        
+        const response = await fetch(`/api/closure/block-classification?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const classification = data.classification.classification || 'VALIDO';
+            const notes = data.classification.notes || '';
+            
+            // Atualizar select
+            select.value = classification;
+            
+            // Atualizar badge e container
+            atualizarBadgeClassificacao(select, classification);
+            
+            
+            console.log(`📋 Classificação carregada: ${classification} para ${date}`);
+        } else {
+            console.warn(`⚠️ Erro ao carregar classificação para ${date}:`, data.error);
+            // Manter default (VÁLIDO)
+        }
+    } catch (error) {
+        console.error(`❌ Erro ao carregar classificação para ${date}:`, error);
+        // Manter default (VÁLIDO)
+    }
+}
+
+// Função para adicionar event listeners de classificação
+function adicionarEventListenersClassificacao(select) {
+    // Event listener para mudança de classificação
+    select.addEventListener('change', function() {
+        const classification = this.value;
+        atualizarBadgeClassificacao(this, classification);
+        salvarClassificacao(this);
+    });
+    
+}
+
+// Função para atualizar badge e container
+function atualizarBadgeClassificacao(select, classification) {
+    const config = CLASSIFICATION_CONFIG[classification];
+    if (!config) return;
+    
+    const badgeId = `badge-classificacao-${select.id.split('-')[1]}`;
+    const badge = document.getElementById(badgeId);
+    const container = select.closest('.classificacao-bloco');
+    
+    if (badge) {
+        badge.textContent = config.label;
+        badge.className = `badge-classificacao ${config.badgeClass}`;
+    }
+    
+    if (container) {
+        // Remover classes de border anteriores
+        container.classList.remove('border-valid', 'border-carga-descarga', 'border-garagem', 'border-invalid');
+        // Adicionar nova classe
+        container.classList.add(config.borderClass);
+    }
+}
+
+
+// Função para salvar classificação
+async function salvarClassificacao(select) {
+    const motoristId = select.dataset.motoristId;
+    const date = select.dataset.date;
+    const truckId = select.dataset.truckId;
+    const classification = select.value;
+    
+    
+    try {
+        const payload = {
+            motorist_id: parseInt(motoristId),
+            date: date,
+            classification: classification,
+            changed_by: 'Usuário via Interface'
+        };
+        
+        if (truckId && truckId !== 'None') {
+            payload.truck_id = parseInt(truckId);
+        }
+        
+        const response = await fetch('/api/closure/block-classification', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log(`✅ Classificação salva: ${classification} para ${date}`);
+            
+            // Feedback visual de sucesso
+            mostrarFeedbackSucesso(select);
+        } else {
+            console.error(`❌ Erro ao salvar classificação:`, data.error);
+            mostrarFeedbackErro(select, data.error);
+        }
+    } catch (error) {
+        console.error(`❌ Erro ao salvar classificação para ${date}:`, error);
+        mostrarFeedbackErro(select, 'Erro de conexão');
+    }
+}
+
+// Função para mostrar feedback de sucesso
+function mostrarFeedbackSucesso(select) {
+    const container = select.closest('.classificacao-bloco');
+    const originalBg = container.style.backgroundColor;
+    
+    container.style.backgroundColor = '#d4edda';
+    container.style.borderLeftColor = '#28a745';
+    
+    setTimeout(() => {
+        container.style.backgroundColor = originalBg;
+        container.style.borderLeftColor = '';
+    }, 1000);
+}
+
+// Função para mostrar feedback de erro
+function mostrarFeedbackErro(select, error) {
+    const container = select.closest('.classificacao-bloco');
+    const originalBg = container.style.backgroundColor;
+    
+    container.style.backgroundColor = '#f8d7da';
+    container.style.borderLeftColor = '#dc3545';
+    
+    // Mostrar tooltip de erro
+    const tooltip = document.createElement('div');
+    tooltip.textContent = `Erro: ${error}`;
+    tooltip.style.cssText = `
+        position: absolute;
+        background: #dc3545;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 1000;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+    `;
+    
+    container.style.position = 'relative';
+    container.appendChild(tooltip);
+    
+    setTimeout(() => {
+        container.style.backgroundColor = originalBg;
+        container.style.borderLeftColor = '';
+        if (tooltip.parentNode) {
+            tooltip.parentNode.removeChild(tooltip);
+        }
+    }, 3000);
+}
+
+// Função para obter classificação de um bloco (para uso em outras funções)
+function obterClassificacaoBloco(blocoIndex) {
+    const select = document.getElementById(`classificacao-${blocoIndex}`);
+    return select ? select.value : 'VALIDO';
+}
+
+// Função para verificar se um bloco é INVÁLIDO
+function isBlocoInvalido(blocoIndex) {
+    return obterClassificacaoBloco(blocoIndex) === 'INVALIDO';
+}
+
+
+console.log('📋 Sistema de classificação de blocos carregado');
+</script>
+
+</body>
+</html>

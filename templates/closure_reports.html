@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Pesquisa de Motoristas e Veículos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}"/>
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    
+    <!-- SweetAlert2 para notificações -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Inclui o componente de progresso -->
+    {% include 'partials/progress_bar.html' %}
+
+    <!-- Inclui o componente de autocomplete -->
+    {% include 'partials/autocomplete.html' %}
+    
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* Estilos para o botão de visualizar */
+        .btn-visualizar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 15px;
+        }
+        
+        .btn-visualizar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        
+        .btn-visualizar i {
+            font-size: 16px;
+        }
+        
+        /* Melhorias no título */
+        .content h2 {
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Melhorias no texto informativo */
+        .info-text {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 25px;
+            font-size: 14px;
+            color: #495057;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+<div class="content">
+    <h2>Relatórios</h2>
+
+    <p class="info-text">
+        Para gerar o relatório de fechamento de ponto, selecione um <b>motorista</b> e defina o período de
+        pesquisa. O relatório será exibido em um modal com todas as informações de jornada e folgas do período.
+        <br><br>
+        <strong>Funcionalidades disponíveis:</strong> Visualização de relatórios, geração de arquivos PDF e Excel.
+    </p>
+
+    <!-- Flash de erro -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-message">
+        <ul>
+            {% for category, message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Formulário -->
+    <div class="form-container">
+        <form id="report-form" autocomplete="off">
+            <div class="form-grupo">
+                <label for="motorist_search">Motorista:</label>
+                <input type="hidden" name="motorist_id" id="motorist_id">
+                <input type="text" id="motorist_search" class="form-control" placeholder="Digite o nome do motorista">
+            </div>
+
+            <div class="form-group">
+                <label for="data_inicio">Período: de </label>
+                <input type="date" name="from_date" id="data_inicio" class="form-control" required/>
+                <label for="data_fim"> até </label>
+                <input type="date" name="to_date" id="data_fim" class="form-control" required/>
+            </div>
+
+            <div id="validation-message" class="validation-message" style="display:none;"></div>
+
+            <button type="submit" class="btn-visualizar">
+                <i class="fas fa-chart-line"></i> Visualizar Relatório
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal (será preenchido dinamicamente) -->
+<div id="resultado-container"></div>
+
+<script>
+    // Preparar dados para o autocomplete
+    const motoristas = [
+        {% for motorist in motorists %}
+        {
+            value: "{{ motorist[0] }}",
+            label: "{{ motorist[1] }}"
+        },
+        {% endfor %}
+    ];
+
+    // Inicializar o componente de autocomplete
+    document.addEventListener('DOMContentLoaded', function() {
+        const autocompleteMotorista = initAutocomplete('motorist_search', {
+            data: motoristas,
+            placeholder: 'Digite o nome do motorista...',
+            onSelect: function(item) {
+                document.getElementById('motorist_id').value = item.value;
+            }
+        });
+    });
+
+    function fecharModal() {
+        const modal = document.getElementById('fechamentoModal');
+        if (modal) modal.remove();
+    }
+
+    async function carregarModalFechamento(query) {
+        const response = await fetch(`/api/closure/get-report?${query}`);
+        const html = await response.text();
+
+        // Remove modal anterior
+        const antigo = document.getElementById('fechamentoModal');
+        if (antigo) antigo.remove();
+
+        const container = document.getElementById('resultado-container');
+        container.innerHTML = html;
+
+        // Mostra o modal
+        const novoModal = document.getElementById('fechamentoModal');
+        if (novoModal) {
+            novoModal.style.display = 'block';
+        }
+
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+
+    document.getElementById('report-form').addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const motoristId = document.getElementById('motorist_id').value;
+        const fromDate = document.getElementById('data_inicio').value;
+        const toDate = document.getElementById('data_fim').value;
+        const validationMessage = document.getElementById('validation-message');
+
+        validationMessage.style.display = 'none';
+        validationMessage.innerHTML = '';
+
+        let errors = [];
+
+        if (!motoristId) errors.push("Selecione um motorista.");
+
+        if (fromDate && toDate) {
+            const start = new Date(fromDate);
+            const end = new Date(toDate);
+            const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+
+            if (diffDays > 31) errors.push("O período máximo permitido é de 31 dias.");
+        } else {
+            errors.push("Datas são obrigatórias.");
+        }
+
+        if (errors.length > 0) {
+            validationMessage.innerHTML = `<p>${errors.join('<br>')}</p>`;
+            validationMessage.style.display = 'block';
+            return;
+        }
+
+        const query = new URLSearchParams({
+            motorist_id: motoristId,
+            from_date: fromDate,
+            to_date: toDate
+        }).toString();
+
+        await carregarModalFechamento(query);
+    });
+    </script>
+    
+    <!-- Funções JavaScript para o relatório de fechamento -->
+    <script>
+    // Função para fechar modal
+    function fecharModal() {
+        const modal = document.getElementById('fechamentoModal');
+        if (modal) modal.remove();
+    }
+
+    // Função para baixar Excel (mesma base da Jornada)
+    function baixarExcelFechamento() {
+        const tabela = document.querySelector("#fechamentoModal table.report-table");
+        const linhas = tabela ? tabela.querySelectorAll("tbody tr") : [];
+        const dadosTabela = [];
+
+        progressManager.startOperation('Gerando Excel', 'Preparando dados...');
+
+        linhas.forEach(linha => {
+            const row = Array.from(linha.querySelectorAll('td')).map(x => x.innerText.trim());
+            // Enviar exatamente como está na tabela do modal (PDF usa mesmo layout)
+            dadosTabela.push(row);
+        });
+
+        // Totais exibidos no cabeçalho do modal
+        const totaisEls = document.querySelectorAll('.totais-compact .total-card .total-label');
+        const valoresEls = document.querySelectorAll('.totais-compact .total-card .total-value');
+
+        // Mapeia rótulos exibidos no modal para as chaves esperadas por fill_excel_fecham
+        const mapLabelToKey = {
+            'INTERVALO': 'intervalo',
+            'ALMOÇO': 'refeicao',
+            'H. TRAB.': 'h_trab',
+            'CARGA': 'carga_horaria',
+            'H.EXTRA50%': 'h_extra50',
+            'H.E. NOT.': 'h_e_not',
+            'AD.NOT': 'ad_not',
+            'DIÁRIA': 'diaria',
+            'AJ. ALIMENT.': 'aj_aliment'
+        };
+
+        // Inicializa objeto de totais com todas as chaves esperadas pela rota de fechamento
+        const totais = {
+            intervalo: '00:00',
+            refeicao: '00:00',
+            h_trab: '00:00',
+            carga_horaria: '00:00',
+            h_extra50: '00:00',
+            h_e_not: '00:00',
+            ad_not: '00:00',
+            diaria: 'R$ 0,00',
+            aj_aliment: 'R$ 0,00'
+        };
+
+        valoresEls.forEach((valEl, idx) => {
+            const label = (totaisEls[idx]?.textContent || '').trim().toUpperCase();
+            const key = mapLabelToKey[label];
+            if (key) {
+                totais[key] = valEl.textContent.trim();
+            }
+        });
+
+        const nome = document.querySelector("#fechamentoModal .header-info h4").innerText.trim();
+        const periodo = document.querySelector("#fechamentoModal .header-info p").innerText.trim();
+        const match = periodo.match(/(\d{2}[\/-]\d{2}[\/-]\d{4}).*?(\d{2}[\/-]\d{2}[\/-]\d{4})/);
+
+        if (!match) {
+            progressManager.finishOperation(() => {
+                alert("Período não encontrado no cabeçalho do modal!");
+            });
+            return;
+        }
+
+        const [, inicio, fim] = match;
+
+        const payload = {
+            nome_motorista: nome,
+            data_inicio: inicio.replace(/-/g, '/'),
+            data_fim: fim.replace(/-/g, '/'),
+            totais: totais,
+            tabela: dadosTabela
+        };
+
+        progressManager.updateProgress(30, 'Enviando dados para o servidor...');
+
+        fetch("/api/closure/export_excel", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        })
+        .then(response => {
+            progressManager.updateProgress(60, 'Gerando arquivo Excel...');
+            if (response.ok) {
+                return response.blob();
+            } else {
+                throw new Error("Erro ao gerar o Excel");
+            }
+        })
+        .then(blob => {
+            progressManager.updateProgress(90, 'Preparando download...');
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `espelho_ponto_${nome.replace(/\s+/g, '_')}_${inicio.replace(/[\/]/g, '-')}_a_${fim.replace(/[\/]/g, '-')}.xlsx`;
+            document.body.appendChild(a);
+            
+            progressManager.finishOperation(() => {
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            });
+        })
+        .catch(error => {
+            progressManager.finishOperation(() => {
+                alert("Erro ao baixar Excel: " + error.message);
+            });
+        });
+    }
+
+    // Função para baixar PDF
+    function baixarPDFFechamento(motorist_id, from_date, to_date) {
+        // Verificar se os parâmetros foram fornecidos
+        if (!motorist_id || !from_date || !to_date) {
+            alert('Erro: Parâmetros necessários não encontrados.');
+            return;
+        }
+        
+        // Mostrar loading
+        Swal.fire({
+            title: 'Gerando PDF...',
+            text: 'Aguarde enquanto preparamos o relatório',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Fazer requisição para gerar PDF
+        const pdfUrl = `/api/closure/generate-pdf?motorist_id=${motorist_id}&from_date=${from_date}&to_date=${to_date}`;
+        
+        fetch(pdfUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao gerar PDF');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Criar link para download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `espelho_ponto_${from_date}_a_${to_date}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                // Fechar loading
+                Swal.fire({
+                    icon: 'success',
+                    title: 'PDF Gerado!',
+                    text: 'O arquivo foi baixado com sucesso.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro ao gerar PDF',
+                    text: 'Ocorreu um erro ao gerar o arquivo PDF. Tente novamente.',
+                });
+            });
+    }
+    </script>
+</body>
+</html>

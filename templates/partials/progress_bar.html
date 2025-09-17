@@ -1,0 +1,284 @@
+<!-- Progress Bar Component -->
+<style>
+    .progress-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .progress-overlay.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .progress-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        width: 90%;
+        max-width: 400px;
+        text-align: center;
+        transform: translateY(20px);
+        transition: transform 0.3s ease;
+    }
+
+    .progress-overlay.visible .progress-container {
+        transform: translateY(0);
+    }
+
+    .spinner {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 1.5rem;
+        border: 4px solid #e5e7eb;
+        border-top-color: #2C3E50;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    .progress-title {
+        color: #1a202c;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+
+    .progress-message {
+        color: #4a5568;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+    }
+
+    .progress-bar-container {
+        background: #e5e7eb;
+        border-radius: 9999px;
+        height: 0.5rem;
+        overflow: hidden;
+        margin-bottom: 0.75rem;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: #2C3E50;
+        border-radius: 9999px;
+        transition: width 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+            90deg,
+            rgba(255,255,255,0) 0%,
+            rgba(255,255,255,0.15) 50%,
+            rgba(255,255,255,0) 100%
+        );
+        animation: shimmer 2s infinite;
+    }
+
+    .progress-percentage {
+        color: #4a5568;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes shimmer {
+        from { transform: translateX(-100%); }
+        to { transform: translateX(100%); }
+    }
+
+    /* Animação de sucesso */
+    .success-checkmark {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 1.5rem;
+        display: none;
+    }
+
+    .success-checkmark.visible {
+        display: block;
+        animation: scaleIn 0.3s ease-in-out;
+    }
+
+    .checkmark-circle {
+        stroke-dasharray: 166;
+        stroke-dashoffset: 166;
+        stroke-width: 2;
+        stroke-miterlimit: 10;
+        stroke: #2C3E50;
+        fill: none;
+        animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+
+    .checkmark-check {
+        transform-origin: 50% 50%;
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+    }
+
+    @keyframes stroke {
+        100% { stroke-dashoffset: 0; }
+    }
+
+    @keyframes scaleIn {
+        from { transform: scale(0); }
+        to { transform: scale(1); }
+    }
+</style>
+
+<div id="progressBarOverlay" class="progress-overlay">
+    <div class="progress-container">
+        <!-- Spinner animado -->
+        <div class="spinner"></div>
+        
+        <!-- Ícone de sucesso (inicialmente oculto) -->
+        <svg class="success-checkmark" viewBox="0 0 52 52">
+            <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+            <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" stroke="#2C3E50" stroke-width="2"/>
+        </svg>
+        
+        <!-- Título do progresso -->
+        <h3 id="progressTitle" class="progress-title">
+            Processando, aguarde...
+        </h3>
+        
+        <!-- Mensagem de progresso -->
+        <p id="progressMessage" class="progress-message">
+            Carregando...
+        </p>
+        
+        <!-- Barra de progresso -->
+        <div class="progress-bar-container">
+            <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+        </div>
+        
+        <!-- Porcentagem -->
+        <p id="progressPercentage" class="progress-percentage">0%</p>
+    </div>
+</div>
+
+<!-- Inicializa a barra de progresso -->
+<script>
+(function() {
+    class ProgressBar {
+        constructor() {
+            this.overlay = document.getElementById('progressBarOverlay');
+            this.container = this.overlay.querySelector('.progress-container');
+            this.spinner = this.overlay.querySelector('.spinner');
+            this.successCheckmark = this.overlay.querySelector('.success-checkmark');
+            this.bar = document.getElementById('progressBar');
+            this.title = document.getElementById('progressTitle');
+            this.message = document.getElementById('progressMessage');
+            this.percentage = document.getElementById('progressPercentage');
+        }
+
+        show(title = 'Processando, aguarde...') {
+            this.title.textContent = title;
+            this.overlay.classList.add('visible');
+            this.spinner.style.display = 'block';
+            this.successCheckmark.classList.remove('visible');
+            document.body.style.overflow = 'hidden';
+        }
+
+        hide() {
+            // Garante que a barra chegue a 100% antes de mostrar o sucesso
+            this.setProgress(100, 'Finalizado!');
+            
+            this.showSuccess(() => {
+                setTimeout(() => {
+                    this.overlay.classList.remove('visible');
+                    document.body.style.overflow = '';
+                    setTimeout(() => {
+                        this.setProgress(0);
+                        this.spinner.style.display = 'block';
+                        this.successCheckmark.classList.remove('visible');
+                    }, 300);
+                }, 1000);
+            });
+        }
+
+        showSuccess(callback) {
+            this.spinner.style.display = 'none';
+            this.successCheckmark.classList.add('visible');
+            this.title.textContent = 'Concluído com sucesso!';
+            this.message.textContent = '';
+            if (callback) setTimeout(callback, 1000);
+        }
+
+        setProgress(percent, message = '') {
+            // Garante que o progresso nunca seja menor que o anterior
+            const currentProgress = parseInt(this.percentage.textContent);
+            const newProgress = Math.max(currentProgress, percent);
+            
+            this.bar.style.width = `${newProgress}%`;
+            this.percentage.textContent = `${newProgress}%`;
+            if (message) {
+                this.message.textContent = message;
+            }
+        }
+
+        setMessage(message) {
+            this.message.textContent = message;
+        }
+    }
+
+    // Inicializa a barra de progresso
+    const progressBar = new ProgressBar();
+
+    // Cria o gerenciador de progresso
+    window.progressManager = {
+        startOperation: function(title, message) {
+            progressBar.show(title);
+            if (message) progressBar.setMessage(message);
+            progressBar.setProgress(0);
+        },
+
+        updateProgress: function(percent, message) {
+            // Se o progresso for maior que 90%, garante que chegue a 100%
+            if (percent >= 90) {
+                progressBar.setProgress(100, message || 'Finalizando...');
+            } else {
+                progressBar.setProgress(percent, message);
+            }
+        },
+
+        finishOperation: function(callback) {
+            // Garante que a barra chegue a 100% antes de finalizar
+            progressBar.setProgress(100, 'Finalizado!');
+            
+            if (callback) {
+                progressBar.hide();
+                setTimeout(callback, 1500);
+            } else {
+                progressBar.hide();
+            }
+        },
+
+        setMessage: function(message) {
+            progressBar.setMessage(message);
+        }
+    };
+})();
+</script> 

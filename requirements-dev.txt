@@ -1,0 +1,36 @@
+# ========================================
+# DEPENDENCIAS DE DESENVOLVIMENTO
+# Sistema RPZ v2.0.0.2
+# ========================================
+
+# Incluir todas as dependencias de producao
+-r requirements.txt
+
+# ========================================
+# FERRAMENTAS DE DESENVOLVIMENTO
+# ========================================
+pytest==7.4.3                   # Framework de testes
+pytest-cov==4.1.0               # Cobertura de codigo
+black==23.11.0                  # Formatador de codigo
+flake8==6.1.0                   # Linter de codigo
+mypy==1.7.1                     # Verificacao de tipos
+pre-commit==3.5.0               # Hooks de pre-commit
+
+# ========================================
+# FERRAMENTAS DE DEBUG
+# ========================================
+ipython==8.17.2                 # Shell interativo melhorado
+ipdb==0.13.13                   # Debugger interativo
+rich==13.7.0                    # Output colorido no terminal
+
+# ========================================
+# FERRAMENTAS DE DOCUMENTACAO
+# ========================================
+sphinx==7.2.6                   # Gerador de documentacao
+sphinx-rtd-theme==1.3.0         # Tema Read the Docs
+
+# ========================================
+# FERRAMENTAS DE ANALISE
+# ========================================
+bandit==1.7.5                   # Analise de seguranca
+safety==2.3.5                   # Verificacao de vulnerabilidades 

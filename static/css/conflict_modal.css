@@ -1,0 +1,205 @@
+/* CSS para modais de conflitos detalhados */
+
+/* Estilos para SweetAlert2 customizado */
+.swal2-container {
+  z-index: 9999;
+}
+
+.swal2-popup {
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.swal2-title {
+  color: #333;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.swal2-html-container {
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+/* Estilos para itens de conflito */
+.conflict-item {
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  border-left: 4px solid #666;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.conflict-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.conflict-date {
+  color: #333;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.conflict-type {
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.conflict-description {
+  color: #666;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* Cores específicas para tipos de conflito */
+.conflict-item.truck-occupied {
+  border-left-color: #d73027;
+}
+
+.conflict-item.truck-occupied .conflict-type {
+  color: #d73027;
+}
+
+.conflict-item.motorist-journey {
+  border-left-color: #f46d43;
+}
+
+.conflict-item.motorist-journey .conflict-type {
+  color: #f46d43;
+}
+
+.conflict-item.motorist-dayoff {
+  border-left-color: #fee08b;
+  background-color: #fffef5;
+}
+
+.conflict-item.motorist-dayoff .conflict-type {
+  color: #cc8400;
+}
+
+.conflict-item.journey-conflict {
+  border-left-color: #4575b4;
+}
+
+.conflict-item.journey-conflict .conflict-type {
+  color: #4575b4;
+}
+
+.conflict-item.dayoff-conflict {
+  border-left-color: #74add1;
+}
+
+.conflict-item.dayoff-conflict .conflict-type {
+  color: #74add1;
+}
+
+/* Botões do SweetAlert2 */
+.swal2-actions {
+  margin-top: 1.5rem;
+}
+
+.swal2-confirm {
+  background-color: #dc3545 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.swal2-confirm:hover {
+  background-color: #c82333 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3) !important;
+}
+
+.swal2-cancel {
+  background-color: #6c757d !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.swal2-cancel:hover {
+  background-color: #5a6268 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3) !important;
+}
+
+/* Container de conflitos */
+.conflicts-container {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 4px;
+  margin: 8px 0;
+}
+
+.conflicts-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conflicts-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.conflicts-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.conflicts-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Animações */
+@keyframes fadeInConflict {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.conflict-item {
+  animation: fadeInConflict 0.3s ease-out;
+}
+
+/* Responsividade */
+@media (max-width: 600px) {
+  .conflict-item {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .conflict-date {
+    font-size: 0.9rem;
+  }
+  
+  .conflict-type {
+    font-size: 0.7rem;
+  }
+  
+  .conflict-description {
+    font-size: 0.8rem;
+  }
+} 

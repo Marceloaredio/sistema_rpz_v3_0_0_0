@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Login - RPZ</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @font-face {
+            font-family: 'MV Boli';
+            src: local("MV Boli");
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="left-side"></div>
+    <div class="right-side">
+        <h2 class="titulo-cic">CIC-Central de Informação e<br>Comunicação RPZ</h2>
+        <div class="login-wrapper">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo RPZ" class="logo"/>
+
+            <!-- Flash message section -->
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="flash-message">
+                <ul>
+                    {% for message in messages %}
+                    <li style="color: red">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <br>
+            {% endif %}
+            {% endwith %}
+
+            <form method="POST">
+                <input type="text" name="email" placeholder="Digite seu usuário" required/>
+
+                <div class="password-wrapper">
+                    <input type="password" name="senha" id="senha" placeholder="Digite sua senha" required/>
+                    <i class="fa-solid fa-eye toggle-password" id="toggleSenha" onclick="togglePassword()"></i>
+                </div>
+
+                <div class="link">
+                    <a href="#">Esqueceu sua senha?</a>
+                </div>
+                <button type="submit">Entrar</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePassword() {
+        const senhaInput = document.getElementById("senha");
+        const icon = document.getElementById("toggleSenha");
+
+        if (senhaInput.type === "password") {
+            senhaInput.type = "text";
+            icon.classList.remove("fa-eye");
+            icon.classList.add("fa-eye-slash");
+        } else {
+            senhaInput.type = "password";
+            icon.classList.remove("fa-eye-slash");
+            icon.classList.add("fa-eye");
+        }
+    }
+</script>
+</body>
+</html>
+
+
+

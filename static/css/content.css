@@ -1,0 +1,114 @@
+.content {
+  border: 10px;
+  padding: 10px;
+  width: 95vw;
+
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+table .data {
+  width: 70%;
+  max-width: 70%;
+  border-collapse: collapse;
+  font-family: 'Roboto', sans-serif;
+  font-size: 13px;
+  text-align: left;
+}
+
+table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  font-family: 'Roboto', sans-serif;
+  font-size: 13px;
+  text-align: center;
+}
+
+
+th {
+  background-color: #2C3E50;
+  color: #FFFFFF;
+  padding: 4px 6px;
+  font-weight: bold;
+  white-space: pre-line;
+  font-size: 11px;
+  min-width: 80px;
+}
+
+td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #e0e0e0;
+  color: #1F2937;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+tr:nth-child(odd) td {
+  background-color: #FFFFFF;
+}
+
+tr:nth-child(even) td {
+  background-color: #F9FAFB;
+}
+
+tr:hover td {
+  background-color: #E5E7EB;
+}
+
+.form-container {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.form-container input, .form-container select {
+  padding: 8px;
+  margin: 5px 0;
+  width: 200px;
+  font-size: 13px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.form-container button {
+  padding: 10px 20px;
+  background-color: #2C3E50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+p {
+    display: block;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    unicode-bidi: isolate;
+}
+button.red {
+  padding: 10px 20px;
+  background-color: #e0465d !important;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.form-container button:hover {
+  background-color: #1A2634;
+}
+
+.form-container select {
+  width: 220px;
+}

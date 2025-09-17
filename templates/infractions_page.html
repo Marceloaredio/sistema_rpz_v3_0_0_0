@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPZ - Infrações</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+
+    <!-- Inclui o componente de progresso -->
+    {% include 'partials/progress_bar.html' %}
+
+    <!-- Inclui o componente de autocomplete -->
+    {% include 'partials/autocomplete.html' %}
+
+    <script>
+        // Função para marcar a infração como lida e abrir detalhes
+        function showDetails(infractionHash) {
+            progressManager.startOperation('Abrindo Detalhes', 'Marcando infração como lida...');
+
+            $.ajax({
+                url: '/mark_as_read',
+                type: 'POST',
+                data: {hash: infractionHash},
+                success: function (response) {
+                    progressManager.updateProgress(50, 'Redirecionando para detalhes...');
+                    window.location.href = `/infraction_details?hash=${infractionHash}`;
+                },
+                error: function () {
+                    progressManager.finishOperation(() => {
+                        console.log('Erro ao marcar a infração como lida.');
+                        alert('Erro ao marcar a infração como lida. Tente novamente.');
+                    });
+                }
+            });
+        }
+
+        // Função para remover uma infração (chamada no duplo clique)
+        function removeInfraction(infractionHash) {
+            if (confirm('Tem certeza que deseja remover esta infração?')) {
+                progressManager.startOperation('Removendo Infração', 'Processando solicitação...');
+
+                $.ajax({
+                    url: `/remove_infraction?hash=${infractionHash}`,
+                    type: 'POST',
+                    success: function (response) {
+                        progressManager.updateProgress(50, 'Atualizando lista...');
+                        window.location.reload();
+                    },
+                    error: function () {
+                        progressManager.finishOperation(() => {
+                            console.log('Erro ao remover a infração.');
+                            alert('Erro ao remover a infração. Tente novamente.');
+                        });
+                    }
+                });
+            }
+        }
+
+        // Função para baixar a tabela de infrações removidas
+        function downloadRemovedInfractions() {
+            progressManager.startOperation('Baixando Relatório', 'Gerando arquivo...');
+            
+            fetch('/download_removed_infractions')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao baixar infrações removidas');
+                    }
+                    progressManager.updateProgress(50, 'Preparando download...');
+                    return response.blob();
+                })
+                .then(blob => {
+                    progressManager.updateProgress(90, 'Iniciando download...');
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'infracoes_removidas.xlsx';
+                    document.body.appendChild(a);
+                    
+                    progressManager.finishOperation(() => {
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(url);
+                    });
+                })
+                .catch(error => {
+                    progressManager.finishOperation(() => {
+                        console.error('Erro ao baixar:', error);
+                        alert('Erro ao baixar infrações removidas. Tente novamente.');
+                    });
+                });
+        }
+
+        // Detectar Ctrl + Alt + R para download da tabela de infrações removidas
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.altKey && e.key === 'r') {
+                e.preventDefault(); // Previne o comportamento padrão do navegador
+                downloadRemovedInfractions();
+            }
+        });
+
+        // Função para exibir as infrações em grupos de 10
+        let currentPage = 1;
+        const rowsPerPage = 10;
+
+        function showPage(page) {
+            const rows = document.querySelectorAll('.infraction-row');
+            const totalRows = rows.length;
+            const start = (page - 1) * rowsPerPage;
+            const end = page * rowsPerPage;
+
+            rows.forEach((row, index) => {
+                if (index >= start && index < end) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('prevButton').disabled = page === 1;
+            document.getElementById('nextButton').disabled = page * rowsPerPage >= totalRows;
+        }
+
+        function nextPage() {
+            const rows = document.querySelectorAll('.infraction-row');
+            const totalRows = rows.length;
+            if (currentPage * rowsPerPage < totalRows) {
+                currentPage++;
+                showPage(currentPage);
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                showPage(currentPage);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            showPage(currentPage);
+        });
+    </script>
+
+    <style>
+        .infraction-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .infraction-row:hover {
+            background-color: #f5f5f5;
+        }
+
+        .btn-detalhar {
+            background-color: #2C3E50;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-detalhar:hover {
+            background-color: #34495E;
+        }
+
+        .pagination {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .pagination button {
+            background-color: #2C3E50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .pagination button:hover {
+            background-color: #34495E;
+        }
+
+        .pagination button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .form-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .form-grupo {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .form-control {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button[type="submit"] {
+            background-color: #2C3E50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #34495E;
+        }
+
+        .hidden {
+            display: inline-block;
+        }
+
+        .shortcut-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+            text-align: right;
+            font-style: italic;
+        }
+
+        .btn-link {
+            color: #2196F3;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .btn-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="content">
+    <div class="container mt-5">
+        <h2 class="mb-4">Lista de Infrações</h2>
+
+        <!-- Filtro de Motorista -->
+        <div class="form-container">
+            <form method="GET" action="{{ url_for('jornada.infractions_page') }}" id="filtroForm" autocomplete="off">
+                <div class="form-grupo">
+                    <input type="hidden" name="motorist_id" id="motorist_id">
+                    <input type="text" id="motorist_search" class="form-control" style="width: 40%" placeholder="Digite o nome do motorista">
+
+                    <select name="tipo_infracao" class="form-control hidden" style="width: 40%">
+                        <option value="">Selecionar Tipo de Infração</option>
+                        {% for tipo, desc in infraction_types.items() %}
+                        {% if tipo_infracao is defined and tipo_infracao|string == tipo|string %}
+                        <option value="{{ tipo }}" selected>{{ desc }}</option>
+                        {% else %}
+                        <option value="{{ tipo }}">{{ desc }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+
+                    <button type="submit">Filtrar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Botões de Navegação -->
+        <div class="pagination">
+            <button id="prevButton" onclick="prevPage()" class="btn btn-primary">Voltar</button>
+            <button id="nextButton" onclick="nextPage()" class="btn btn-primary">Próximo</button>
+        </div>
+
+        <!-- Tabela de Infrações -->
+        <table>
+            <thead>
+            <tr>
+                <th>Motorista</th>
+                <th>Data</th>
+                <th>Hora</th>
+                <th>Infração</th>
+                <th>Lido</th>
+                <th>justification</th>
+                <th>Ações</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for infraction in infractions %}
+            <tr class="infraction-row" ondblclick="removeInfraction('{{ infraction[0] }}')" data-hash="{{ infraction[0] }}">
+                {% for motorist in all_motorists %}
+                {% if not name_shown and motorist[0] == infraction[1] %}
+                <td>{{ motorist[1] }}</td>
+                {% endif %}
+                {% endfor %}
+                <td>{{ infraction[3] }}</td>
+                <td>{{ infraction[4] }}</td>
+                <td>{{ infraction[7]}}</td>
+                <td>
+                    {% if infraction[8] %}
+                    Sim
+                    {% else %}
+                    Não
+                    {% endif %}
+                </td>
+                <td>
+                    {% if infraction[9] %}
+                    <a href="{{ infraction[9] }}" target="_blank" class="btn-link">Ver</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn-detalhar" onclick="showDetails('{{ infraction[0] }}')">
+                        Detalhar
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+<script>
+// Preparar dados dos motoristas para o autocomplete
+const motoristas = [
+    {% for motorist in all_motorists %}
+    {
+        value: "{{ motorist[0] }}",
+        label: "{{ motorist[1] }}"
+    },
+    {% endfor %}
+];
+
+// Inicializar o autocomplete
+document.addEventListener('DOMContentLoaded', function() {
+    const autocomplete = initAutocomplete('motorist_search', {
+        data: motoristas,
+        placeholder: 'Digite o nome do motorista...',
+        onSelect: function(item) {
+            // Quando um item é selecionado, atualizar o campo hidden e submeter o form
+            document.getElementById('motorist_id').value = item.value;
+            document.getElementById('filtroForm').submit();
+        }
+    });
+
+    // Se já existe um motorista selecionado, preencher o campo de busca
+    {% if motorist_id is defined and motorist_id %}
+        const selectedMotorist = motoristas.find(m => m.value == "{{ motorist_id }}");
+        if (selectedMotorist) {
+            document.getElementById('motorist_search').value = selectedMotorist.label;
+            document.getElementById('motorist_id').value = selectedMotorist.value;
+        }
+    {% endif %}
+});
+</script>
+</body>
+</html>

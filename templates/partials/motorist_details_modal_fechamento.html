@@ -1,0 +1,2563 @@
+<!-- Modal de Detalhes do Motorista - Módulo Fechamento -->
+<div id="motoristDetailsModal" class="motorist-details-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2 class="modal-title">Detalhes do Motorista: <span id="motoristNameDisplay"></span></h2>
+            <button class="modal-close-btn" id="closeModalBtn">&times;</button>
+        </div>
+        
+        <div class="modal-content">
+            <div class="actions-bar">
+                <div class="left-actions">
+                    <button id="deleteSelectedBtn" class="action-btn delete-btn">
+                        <i class="fas fa-trash"></i> Excluir Selecionados
+                    </button>
+                    
+                    <!-- 🆕 Filtro de Período -->
+                    <div class="date-input-group">
+                        <label for="filterStartDate">De:</label>
+                        <input type="date" id="filterStartDate" class="date-input">
+                    </div>
+                    <div class="date-input-group">
+                        <label for="filterEndDate">Até:</label>
+                        <input type="date" id="filterEndDate" class="date-input">
+                    </div>
+                    <button id="filterBtn" class="action-btn filter-btn">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                    <button id="resetFilterBtn" class="action-btn reset-btn" style="display: none;">
+                        <i class="fas fa-undo"></i> Resetar Filtro
+                    </button>
+                </div>
+                <div class="pagination-controls">
+                    <button id="prevPageBtn" class="action-btn nav-btn">
+                        <i class="fas fa-chevron-left"></i> Anterior
+                    </button>
+                    <span class="page-info">
+                        Página <span id="currentPageSpan">1</span> de <span id="totalPagesSpan">1</span>
+                    </span>
+                    <button id="nextPageBtn" class="action-btn nav-btn">
+                        Próximo <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table class="details-data-table">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-col">
+                                <input type="checkbox" id="selectAllCheckbox" class="data-checkbox">
+                            </th>
+                            <th>Placa</th>
+                            <th>Data</th>
+                            <th>Dia da Semana</th>
+                            <th>Início Jornada</th>
+                            <th>Início Refeição</th>
+                            <th>Fim Refeição</th>
+                            <th>Fim Jornada</th>
+                            <th>Observação</th>
+                            <th>Tempo Refeição</th>
+                            <th>Tempo Intervalo</th>
+                            <th>H. Trabalhadas</th>
+                            <th>Carga Horária</th>
+                            <th>H.extra 50%</th>
+                            <th>Adicional Noturno</th>
+                            <th>H.E. Not</th>
+                            <th>Diária</th>
+                            <th>Ajuda Alimentação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="motoristDetailsTableBody">
+                        <!-- Dados serão inseridos aqui via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="loading-indicator" id="loadingIndicator" style="display: none;">
+                <div class="spinner"></div>
+                <span>Carregando dados...</span>
+            </div>
+            
+            <div class="no-data-message" id="noDataMessage" style="display: none;">
+                <i class="fas fa-info-circle"></i>
+                <span>Nenhum registro encontrado para o período selecionado.</span>
+            </div>
+            
+            <!-- 🆕 Cards de Soma -->
+            <div class="summary-cards-container" id="summaryCardsContainer" style="display: none;">
+                <div class="summary-cards-grid">
+                    <!-- Total Temp. Ref. -->
+                    <div class="summary-card" id="cardTempRef">
+                        <div class="card-title">Total Temp. Ref.</div>
+                        <div class="card-value" id="valueTempRef">00:00</div>
+                    </div>
+                    
+                    <!-- Total Temp. Interv. -->
+                    <div class="summary-card" id="cardTempInterv">
+                        <div class="card-title">Total Temp. Interv.</div>
+                        <div class="card-value" id="valueTempInterv">00:00</div>
+                    </div>
+                    
+                    <!-- Total H. Trab. -->
+                    <div class="summary-card" id="cardHTrab">
+                        <div class="card-title">Total H. Trab.</div>
+                        <div class="card-value" id="valueHTrab">00:00</div>
+                    </div>
+                    
+                    <!-- Total C. Horária -->
+                    <div class="summary-card" id="cardCHoraria">
+                        <div class="card-title">Total C. Horária</div>
+                        <div class="card-value" id="valueCHoraria">00:00</div>
+                    </div>
+                    
+                    <!-- Total H.extra 50% -->
+                    <div class="summary-card" id="cardHExtra50">
+                        <div class="card-title">Total H.extra 50%</div>
+                        <div class="card-value" id="valueHExtra50">00:00</div>
+                    </div>
+                    
+                    <!-- Total Ad. Noturno -->
+                    <div class="summary-card" id="cardAdNoturno">
+                        <div class="card-title">Total Ad. Noturno</div>
+                        <div class="card-value" id="valueAdNoturno">00:00</div>
+                    </div>
+                    
+                    <!-- Total H.E. Not -->
+                    <div class="summary-card" id="cardHENot">
+                        <div class="card-title">Total H.E. Not</div>
+                        <div class="card-value" id="valueHENot">00:00</div>
+                    </div>
+                    
+                    <!-- Total Diária -->
+                    <div class="summary-card" id="cardDiaria">
+                        <div class="card-title">Total Diária</div>
+                        <div class="card-value" id="valueDiaria">R$ 0,00</div>
+                    </div>
+                    
+                    <!-- Total Aj. Alimentação -->
+                    <div class="summary-card" id="cardAjAlimentacao">
+                        <div class="card-title">Total Aj. Alimentação</div>
+                        <div class="card-value" id="valueAjAlimentacao">R$ 0,00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Modal de Detalhes do Motorista - Módulo Fechamento */
+.motorist-details-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: none;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.motorist-details-modal.active {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Ajuste para telas muito pequenas */
+@media (max-width: 480px) {
+    .motorist-details-modal.active {
+        align-items: flex-start;
+        padding: 10px;
+    }
+}
+
+/* 🆕 Estilos para Filtro de Período */
+
+.date-input-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+}
+
+.date-input-group label {
+    font-size: 11px;
+    color: #000;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.date-input {
+    padding: 3px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
+    font-size: 11px;
+    min-width: 100px;
+    height: 26px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    background: rgba(255, 255, 255, 1);
+}
+
+.filter-btn {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: none;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.filter-btn:hover {
+    background: linear-gradient(135deg, #218838, #1ea085);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 🆕 Estilos para botão Resetar Filtro */
+.reset-btn {
+    background: linear-gradient(135deg, #6c757d, #5a6268);
+    border: none;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.reset-btn:hover {
+    background: linear-gradient(135deg, #5a6268, #495057);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.filter-btn:active {
+    transform: translateY(0);
+}
+
+/* 🆕 Estilos para Cards de Soma */
+.summary-cards-container {
+    margin-top: 15px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.summary-cards-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    align-items: stretch;
+}
+
+.summary-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 10px 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    text-align: center;
+    border: 1px solid #e9ecef;
+    min-width: 120px;
+    max-width: 140px;
+    flex: 1;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #007bff, #28a745, #ffc107, #dc3545);
+    opacity: 0.7;
+}
+
+.summary-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border-color: #007bff;
+}
+
+.summary-card:hover::before {
+    opacity: 1;
+}
+
+.card-title {
+    font-size: 10px;
+    color: #495057;
+    margin-bottom: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+}
+
+.card-value {
+    font-size: 14px;
+    font-weight: bold;
+    color: #212529;
+    font-family: 'Courier New', monospace;
+    line-height: 1.1;
+}
+
+/* Responsividade para os cards */
+@media (max-width: 768px) {
+    .summary-cards-grid {
+        gap: 6px;
+    }
+    
+    .summary-card {
+        min-width: 100px;
+        max-width: 120px;
+        padding: 8px 6px;
+    }
+    
+    .card-title {
+        font-size: 9px;
+        margin-bottom: 4px;
+    }
+    
+    .card-value {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .date-input-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .date-input-group label {
+        min-width: 20px;
+        font-size: 9px;
+    }
+    
+    .date-input {
+        min-width: 90px;
+        flex: 1;
+        height: 24px;
+        font-size: 10px;
+        padding: 2px 4px;
+    }
+    
+    .filter-btn {
+        align-self: center;
+        min-width: 90px;
+        height: 24px;
+        font-size: 10px;
+        padding: 2px 4px;
+    }
+    
+    .summary-cards-grid {
+        gap: 4px;
+    }
+    
+    .summary-card {
+        min-width: 80px;
+        max-width: 100px;
+        padding: 6px 4px;
+    }
+    
+    .card-title {
+        font-size: 8px;
+        margin-bottom: 3px;
+    }
+    
+    .card-value {
+        font-size: 10px;
+    }
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+.modal-container {
+    position: relative;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    width: 98%;
+    max-width: 95vw;
+    height: 95%;
+    max-height: 95vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 8px 8px 0 0;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    word-wrap: break-word;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+}
+
+.modal-close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-content {
+    flex: 1;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.actions-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    padding: 4px 8px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.left-actions {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.page-info {
+    font-weight: 500;
+    color: #495057;
+    min-width: 120px;
+    text-align: center;
+}
+
+.action-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    min-width: fit-content;
+    height: 28px;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+    color: white;
+    padding: 6px 12px;
+    font-size: 12px;
+    height: 28px;
+    align-self: flex-start;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.nav-btn:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.nav-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.table-container {
+    flex: 1;
+    overflow: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: white;
+    position: relative;
+    min-height: 0;
+}
+
+.details-data-table {
+    width: 100%;
+    min-width: 1900px;
+    border-collapse: collapse;
+    font-size: 12px;
+    table-layout: fixed;
+    white-space: nowrap;
+}
+
+.details-data-table th,
+.details-data-table td {
+    padding: 6px 4px;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+    overflow: visible;
+    max-width: none;
+    min-width: 80px;
+}
+
+.details-data-table th {
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.2;
+    font-size: 10px;
+    padding: 8px 3px;
+}
+
+.details-data-table td {
+    white-space: nowrap;
+}
+
+.details-data-table th:nth-child(2),
+.details-data-table td:nth-child(2) {
+    min-width: 100px; /* Coluna da data */
+}
+
+.details-data-table th:nth-child(3),
+.details-data-table td:nth-child(3) {
+    min-width: 80px; /* Coluna do dia da semana */
+}
+
+.details-data-table th:nth-child(4),
+.details-data-table td:nth-child(4) {
+    min-width: 90px; /* Coluna da placa */
+}
+
+.details-data-table th:nth-child(5),
+.details-data-table td:nth-child(5) {
+    min-width: 90px; /* Coluna início jornada */
+}
+
+.details-data-table th:nth-child(6),
+.details-data-table td:nth-child(6) {
+    min-width: 90px; /* Coluna início refeição */
+}
+
+.details-data-table th:nth-child(7),
+.details-data-table td:nth-child(7) {
+    min-width: 90px; /* Coluna fim refeição */
+}
+
+.details-data-table th:nth-child(8),
+.details-data-table td:nth-child(8) {
+    min-width: 90px; /* Coluna fim jornada */
+}
+
+.details-data-table th:nth-child(9),
+.details-data-table td:nth-child(9) {
+    min-width: 120px; /* Coluna observação */
+}
+
+.details-data-table th:nth-child(10),
+.details-data-table td:nth-child(10) {
+    min-width: 100px; /* Coluna tempo refeição */
+}
+
+.details-data-table th:nth-child(11),
+.details-data-table td:nth-child(11) {
+    min-width: 100px; /* Coluna tempo intervalo */
+}
+
+.details-data-table th:nth-child(12),
+.details-data-table td:nth-child(12) {
+    min-width: 100px; /* Coluna horas trabalhadas */
+}
+
+.details-data-table th:nth-child(13),
+.details-data-table td:nth-child(13) {
+    min-width: 100px; /* Coluna carga horária */
+}
+
+.details-data-table th:nth-child(14),
+.details-data-table td:nth-child(14) {
+    min-width: 100px; /* Coluna hora extra 50% */
+}
+
+.details-data-table th:nth-child(15),
+.details-data-table td:nth-child(15) {
+    min-width: 120px; /* Coluna adicional noturno */
+}
+
+.details-data-table th:nth-child(16),
+.details-data-table td:nth-child(16) {
+    min-width: 100px; /* Coluna hora extra noturna */
+}
+
+.details-data-table th:nth-child(17),
+.details-data-table td:nth-child(17) {
+    min-width: 100px; /* Coluna diária */
+}
+
+.details-data-table th:nth-child(18),
+.details-data-table td:nth-child(18) {
+    min-width: 120px; /* Coluna ajuda alimentação */
+}
+
+.details-data-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid #dee2e6;
+    font-size: 11px;
+    padding: 8px 4px;
+}
+
+.details-data-table tbody tr {
+    transition: background-color 0.15s;
+    height: 32px;
+}
+
+.details-data-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.details-data-table tbody tr:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+.details-data-table tbody tr:nth-child(even):hover {
+    background-color: #f1f3f4;
+}
+
+.checkbox-col {
+    width: 20px;
+    text-align: center;
+    min-width: 20px;
+    max-width: 20px;
+}
+
+.data-checkbox {
+    width: 12px;
+    height: 12px;
+    cursor: pointer;
+    margin: 0;
+}
+
+.loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #6c757d;
+    font-size: 16px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.no-data-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #6c757d;
+    font-size: 16px;
+    text-align: center;
+}
+
+.no-data-message i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #adb5bd;
+}
+
+/* Responsividade */
+@media (min-width: 1920px) {
+    /* Telas muito grandes (4K, etc.) */
+    .modal-container {
+        width: 90%;
+        max-width: 1800px;
+        height: 90%;
+        max-height: 1000px;
+    }
+    
+    .details-data-table {
+        font-size: 14px;
+        min-width: 2100px;
+    }
+    
+    .details-data-table th,
+    .details-data-table td {
+        padding: 10px 6px;
+        min-width: 120px;
+    }
+    
+    .details-data-table tbody tr {
+        height: 40px;
+    }
+    
+    .modal-title {
+        font-size: 1.5rem;
+    }
+    
+    .action-btn {
+        padding: 12px 20px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 1600px) {
+    /* Telas grandes (Full HD) */
+    .modal-container {
+        width: 95%;
+        max-width: 95vw;
+        height: 95%;
+        max-height: 95vh;
+    }
+    
+    .details-data-table {
+        font-size: 12px;
+        min-width: 1700px;
+    }
+    
+    .details-data-table th,
+    .details-data-table td {
+        padding: 6px 4px;
+        min-width: 80px;
+    }
+    
+    .details-data-table tbody tr {
+        height: 35px;
+    }
+}
+
+@media (max-width: 1400px) {
+    /* Telas médias (HD) */
+    .modal-container {
+        width: 98%;
+        max-width: 95vw;
+        height: 95%;
+        max-height: 95vh;
+    }
+    
+    .details-data-table {
+        font-size: 11px;
+        min-width: 1500px;
+    }
+    
+    .details-data-table th,
+    .details-data-table td {
+        padding: 5px 3px;
+        min-width: 70px;
+    }
+    
+    .details-data-table tbody tr {
+        height: 32px;
+    }
+    
+    .modal-title {
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 1200px) {
+    /* Telas pequenas (Laptop) */
+    .modal-container {
+        width: 98%;
+        max-width: 95vw;
+        height: 95%;
+        max-height: 95vh;
+    }
+    
+    .details-data-table {
+        font-size: 10px;
+        min-width: 1300px;
+    }
+    
+    .details-data-table th,
+    .details-data-table td {
+        padding: 4px 2px;
+        min-width: 60px;
+    }
+    
+    .details-data-table tbody tr {
+        height: 30px;
+    }
+    
+    .modal-title {
+        font-size: 1.2rem;
+    }
+    
+    .action-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 992px) {
+    /* Tablets */
+    .modal-container {
+        width: 98%;
+        max-width: 95vw;
+        height: 95%;
+        max-height: 95vh;
+    }
+    
+    .details-data-table {
+        font-size: 9px;
+        min-width: 1100px;
+    }
+    
+    .details-data-table th,
+    .details-data-table td {
+        padding: 3px 1px;
+        min-width: 50px;
+    }
+    
+    .details-data-table tbody tr {
+        height: 28px;
+    }
+    
+    .actions-bar {
+        padding: 10px;
+        gap: 10px;
+    }
+    
+    .page-info {
+        min-width: 100px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Smartphones grandes */
+    .modal-container {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        margin: 0;
+    }
+    
+    .modal-header {
+        border-radius: 0;
+        padding: 12px 15px;
+    }
+    
+    .modal-title {
+        font-size: 1.1rem;
+    }
+    
+    .actions-bar {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+        padding: 8px;
+    }
+    
+    .pagination-controls {
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .details-data-table {
+        font-size: 8px;
+        min-width: 900px;
+    }
+    
+    .details-data-table th,
+    .details-data-table td {
+        padding: 2px 1px;
+        min-width: 40px;
+    }
+    
+    .details-data-table tbody tr {
+        height: 24px;
+    }
+    
+    .action-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .page-info {
+        min-width: 80px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    /* Smartphones pequenos */
+    .modal-container {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+    
+    .modal-header {
+        padding: 10px 12px;
+    }
+    
+    .modal-title {
+        font-size: 1rem;
+    }
+    
+    .actions-bar {
+        padding: 6px;
+        gap: 8px;
+    }
+    
+    .details-data-table {
+        font-size: 7px;
+        min-width: 700px;
+    }
+    
+    .details-data-table th,
+    .details-data-table td {
+        padding: 1px;
+        min-width: 30px;
+    }
+    
+    .details-data-table tbody tr {
+        height: 20px;
+    }
+    
+    .action-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+    
+    .page-info {
+        min-width: 70px;
+        font-size: 11px;
+    }
+    
+    .left-actions {
+        gap: 8px;
+    }
+    
+    .pagination-controls {
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Smartphones muito pequenos */
+    .modal-container {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .modal-header {
+        padding: 8px 10px;
+    }
+    
+    .modal-title {
+        font-size: 0.9rem;
+    }
+    
+    .details-data-table {
+        font-size: 6px;
+        min-width: 500px;
+    }
+    
+    .details-data-table th,
+    .details-data-table td {
+        padding: 1px;
+        min-width: 25px;
+    }
+    
+    .details-data-table tbody tr {
+        height: 18px;
+    }
+    
+    .action-btn {
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+    
+    .page-info {
+        min-width: 60px;
+        font-size: 10px;
+    }
+}
+
+/* Animações */
+.motorist-details-modal.active .modal-container {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Scrollbar personalizada */
+.table-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>
+
+<script>
+// Sistema de Modal de Detalhes do Motorista - Módulo Fechamento
+class MotoristDetailsModal {
+    constructor() {
+        this.modal = document.getElementById('motoristDetailsModal');
+        this.currentPage = 1;
+        this.rowsPerPage = 10;
+        this.currentData = [];
+        this.originalData = []; // 🆕 Dados originais para resetar filtros
+        this.filteredData = []; // 🆕 Dados filtrados
+        this.isFiltered = false; // 🆕 Flag para controlar estado do filtro
+        this.currentMotoristId = null;
+        this.currentMotoristName = null;
+        
+        // Verificar se o modal existe
+        if (!this.modal) {
+            console.error('Elemento modal não encontrado: motoristDetailsModal');
+            return;
+        }
+        
+        // Verificar elementos essenciais
+        const essentialElements = [
+            'closeModalBtn',
+            'motoristNameDisplay',
+            'deleteSelectedBtn',
+            'prevPageBtn',
+            'nextPageBtn',
+            'selectAllCheckbox',
+            'motoristDetailsTableBody',
+            'currentPageSpan',
+            'totalPagesSpan',
+            'loadingIndicator',
+            'noDataMessage'
+        ];
+        
+        const missingElements = essentialElements.filter(id => !document.getElementById(id));
+        if (missingElements.length > 0) {
+            console.error('Elementos essenciais não encontrados:', missingElements);
+            return;
+        }
+        
+        this.init();
+    }
+    
+    init() {
+        try {
+            this.bindEvents();
+            this.setupGlobalFunctions();
+            console.log('Modal inicializado com sucesso');
+        } catch (error) {
+            console.error('Erro ao inicializar modal:', error);
+        }
+    }
+    
+    bindEvents() {
+        try {
+            // Botão de fechar
+            const closeBtn = document.getElementById('closeModalBtn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    this.hide();
+                });
+            }
+            
+            // Fechar ao clicar no overlay
+            const overlay = this.modal.querySelector('.modal-overlay');
+            if (overlay) {
+                overlay.addEventListener('click', () => {
+                    this.hide();
+                });
+            }
+            
+            // Fechar com ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.isVisible()) {
+                    this.hide();
+                }
+            });
+            
+            // Navegação
+            const prevBtn = document.getElementById('prevPageBtn');
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    this.previousPage();
+                });
+            }
+            
+            const nextBtn = document.getElementById('nextPageBtn');
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    this.nextPage();
+                });
+            }
+            
+            // Seleção
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', (e) => {
+                    this.toggleSelectAll(e.target.checked);
+                });
+            }
+            
+            // Exclusão
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    this.deleteSelected();
+                });
+            }
+            
+            // 🆕 FASE 3: Botão Resetar Filtro
+            const resetFilterBtn = document.getElementById('resetFilterBtn');
+            if (resetFilterBtn) {
+                resetFilterBtn.addEventListener('click', () => {
+                    this.resetarFiltro();
+                });
+            }
+            
+            console.log('Eventos vinculados com sucesso');
+        } catch (error) {
+            console.error('Erro ao vincular eventos:', error);
+        }
+    }
+    
+    setupGlobalFunctions() {
+        try {
+            // Expor funções para uso externo
+            window.showMotoristDetailsModal = (motoristId, motoristName) => {
+                if (this.show) {
+                    this.show(motoristId, motoristName);
+                } else {
+                    console.error('Método show não está disponível');
+                    alert('Erro interno do modal. Tente recarregar a página.');
+                }
+            };
+            
+            window.hideMotoristDetailsModal = () => {
+                if (this.hide) {
+                    this.hide();
+                } else {
+                    console.error('Método hide não está disponível');
+                }
+            };
+            
+            console.log('Funções globais configuradas com sucesso');
+        } catch (error) {
+            console.error('Erro ao configurar funções globais:', error);
+        }
+    }
+    
+    show(motoristId, motoristName) {
+        try {
+            // Verificações de segurança
+            if (!motoristId || !motoristName) {
+                console.error('ID ou nome do motorista inválido:', { motoristId, motoristName });
+                alert('Dados do motorista inválidos. Tente novamente.');
+                return;
+            }
+            
+            if (!this.modal) {
+                console.error('Elemento modal não encontrado');
+                alert('Erro interno do sistema. Tente recarregar a página.');
+                return;
+            }
+            
+            this.currentMotoristId = motoristId;
+            this.currentMotoristName = motoristName;
+            
+            // Atualizar nome na interface
+            const nameDisplay = document.getElementById('motoristNameDisplay');
+            if (nameDisplay) {
+                nameDisplay.textContent = motoristName;
+            }
+            
+            // Mostrar modal
+            this.modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            // Carregar dados
+            this.loadMotoristDetails();
+            
+        } catch (error) {
+            console.error('Erro ao mostrar modal:', error);
+            alert('Erro ao abrir modal de detalhes. Tente novamente.');
+        }
+    }
+    
+    hide() {
+        this.modal.classList.remove('active');
+        document.body.style.overflow = '';
+        
+        // Limpar dados
+        this.currentData = [];
+        this.currentPage = 1;
+        this.clearTable();
+    }
+    
+    isVisible() {
+        return this.modal.classList.contains('active');
+    }
+    
+    async loadMotoristDetails() {
+        try {
+            if (!this.currentMotoristId) {
+                throw new Error('ID do motorista não definido');
+            }
+            
+            this.showLoading(true);
+            this.clearTable();
+            
+            const today = new Date();
+            const sixtyDaysAgo = new Date(today);
+            sixtyDaysAgo.setDate(today.getDate() - 60);
+            
+            const response = await fetch(`/api/closure/get-motorist-details?motorist_id=${this.currentMotoristId}&from_date=${sixtyDaysAgo.toISOString().split('T')[0]}&to_date=${today.toISOString().split('T')[0]}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            let records = [];
+            
+            if (data && data.registros) {
+                records = data.registros;
+            } else if (Array.isArray(data)) {
+                records = data;
+            }
+            
+            if (records.length === 0) {
+                this.showNoData();
+                return;
+            }
+            
+            // Ordenar por data (mais recente primeiro)
+            records.sort((a, b) => {
+                const dateA = this.parseDateBR(a.data);
+                const dateB = this.parseDateBR(b.data);
+                if (!dateA && !dateB) return 0;
+                if (!dateA) return 1;
+                if (!dateB) return -1;
+                return dateB - dateA;
+            });
+            
+            this.currentData = records;
+            this.originalData = [...records]; // 🆕 Salvar dados originais
+            this.filteredData = []; // 🆕 Limpar dados filtrados
+            this.isFiltered = false; // 🆕 Resetar flag de filtro
+            this.currentPage = 1;
+            this.renderTable();
+            this.updatePagination();
+            
+        } catch (error) {
+            console.error('Erro ao carregar detalhes:', error);
+            this.showError(`Erro ao carregar dados do motorista: ${error.message}. Tente novamente.`);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+    
+    parseDateBR(dateStr) {
+        if (!dateStr) return null;
+        const match = dateStr.trim().match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/);
+        if (!match) return null;
+        const day = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10) - 1;
+        const year = parseInt(match[3], 10);
+        return new Date(year, month, day);
+    }
+    
+    renderTable() {
+        const tbody = document.getElementById('motoristDetailsTableBody');
+        tbody.innerHTML = '';
+        
+        // 🆕 Verificar se há dados para exibir
+        if (this.currentData.length === 0) {
+            if (this.isFiltered) {
+                // Mostrar mensagem de filtro sem resultados
+                const noFilterResultsRow = document.createElement('tr');
+                noFilterResultsRow.innerHTML = `
+                    <td colspan="17" class="no-data-message" style="text-align: center; padding: 20px; color: #666;">
+                        <i class="fas fa-filter" style="margin-right: 8px;"></i>
+                        Nenhum registro encontrado para o período selecionado.
+                        <br><small>Clique em "Resetar Filtro" para ver todos os registros.</small>
+                    </td>
+                `;
+                tbody.appendChild(noFilterResultsRow);
+            } else {
+                // Mostrar mensagem de dados vazios
+                const noDataRow = document.createElement('tr');
+                noDataRow.innerHTML = `
+                    <td colspan="17" class="no-data-message" style="text-align: center; padding: 20px; color: #666;">
+                        <i class="fas fa-info-circle" style="margin-right: 8px;"></i>
+                        Nenhum registro encontrado para este motorista.
+                    </td>
+                `;
+                tbody.appendChild(noDataRow);
+            }
+            return;
+        }
+        
+        const startIndex = (this.currentPage - 1) * this.rowsPerPage;
+        const endIndex = Math.min(startIndex + this.rowsPerPage, this.currentData.length);
+        const pageData = this.currentData.slice(startIndex, endIndex);
+        
+        pageData.forEach((record, index) => {
+            const row = this.createTableRow(record, startIndex + index);
+            tbody.appendChild(row);
+        });
+        
+        this.updateSelectAllState();
+    }
+    
+    createTableRow(record, globalIndex) {
+        console.log('Criando linha para registro:', record);
+        const tr = document.createElement('tr');
+        tr.dataset.globalIndex = globalIndex;
+        
+        // Checkbox
+        const checkboxCell = document.createElement('td');
+        checkboxCell.className = 'checkbox-col';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'data-checkbox row-checkbox';
+        checkbox.dataset.date = record.data;
+        checkbox.addEventListener('change', () => this.updateSelectAllState());
+        checkboxCell.appendChild(checkbox);
+        tr.appendChild(checkboxCell);
+        
+        // Dados
+        const data = [
+            record.placa || record.placa_veiculo || '',
+            record.data || '',
+            this.abbreviateWeekday(record.dia_da_semana) || this.calculateWeekdayFromDate(record.data),
+            record.inicio_jornada || '',
+            record.in_refeicao || '',
+            record.fim_refeicao || '',
+            record.fim_jornada || '',
+            record.observacao || record.motivo || '',
+            record.tempo_refeicao || '',
+            record.tempo_intervalo || '',
+            record.jornada_total || '',
+            record.carga_horaria || record.carga_horaria_esp || '',
+            record.hextra_50 || record.hextra_50_esp || '',
+            record.adicional_noturno || record.he_noturno || '',
+            record.he_noturno || '',
+            `R$ ${(record.daily_value || 0).toFixed(2)}`,
+            `R$ ${(record.food_value || 0).toFixed(2)}`
+        ];
+        
+        data.forEach(value => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            tr.appendChild(td);
+        });
+        
+        return tr;
+    }
+    
+    abbreviateWeekday(weekday) {
+        if (!weekday) return '';
+        const abbreviations = {
+            'Segunda-feira': 'Seg.',
+            'Terça-feira': 'Ter.',
+            'Quarta-feira': 'Qua.',
+            'Quinta-feira': 'Qui.',
+            'Sexta-feira': 'Sex.',
+            'Sábado': 'Sáb.',
+            'Domingo': 'Dom.'
+        };
+        return abbreviations[weekday] || weekday;
+    }
+    
+    calculateWeekdayFromDate(dateStr) {
+        if (!dateStr) return '';
+        const date = this.parseDateBR(dateStr);
+        if (!date) return '';
+        
+        const weekdays = ['Dom.', 'Seg.', 'Ter.', 'Qua.', 'Qui.', 'Sex.', 'Sáb.'];
+        return weekdays[date.getDay()];
+    }
+    
+    updatePagination() {
+        const totalPages = Math.ceil(this.currentData.length / this.rowsPerPage);
+        
+        // 🆕 Atualizar informações de paginação
+        document.getElementById('currentPageSpan').textContent = this.currentPage;
+        document.getElementById('totalPagesSpan').textContent = totalPages;
+        
+        // 🆕 Desabilitar botões de navegação se necessário
+        document.getElementById('prevPageBtn').disabled = this.currentPage <= 1;
+        document.getElementById('nextPageBtn').disabled = this.currentPage >= totalPages;
+        
+        // 🆕 Mostrar informações sobre filtro se aplicado
+        if (this.isFiltered) {
+            const totalRegistros = this.originalData.length;
+            const registrosFiltrados = this.currentData.length;
+            
+            // Adicionar indicador visual de filtro ativo
+            const paginationInfo = document.querySelector('.pagination-controls');
+            if (paginationInfo) {
+                let filterIndicator = paginationInfo.querySelector('.filter-indicator');
+                if (!filterIndicator) {
+                    filterIndicator = document.createElement('div');
+                    filterIndicator.className = 'filter-indicator';
+                    filterIndicator.style.cssText = `
+                        font-size: 11px;
+                        color: #28a745;
+                        background: rgba(40, 167, 69, 0.1);
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        border: 1px solid rgba(40, 167, 69, 0.3);
+                        margin-left: 10px;
+                        white-space: nowrap;
+                    `;
+                    paginationInfo.appendChild(filterIndicator);
+                }
+                filterIndicator.innerHTML = `
+                    <i class="fas fa-filter" style="margin-right: 4px;"></i>
+                    Filtro ativo: ${registrosFiltrados} de ${totalRegistros} registros
+                `;
+            }
+        } else {
+            // Remover indicador de filtro se não estiver ativo
+            const filterIndicator = document.querySelector('.filter-indicator');
+            if (filterIndicator) {
+                filterIndicator.remove();
+            }
+        }
+    }
+    
+    previousPage() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.renderTable();
+            this.updatePagination();
+        }
+    }
+    
+    nextPage() {
+        const totalPages = Math.ceil(this.currentData.length / this.rowsPerPage);
+        if (this.currentPage < totalPages) {
+            this.currentPage++;
+            this.renderTable();
+            this.updatePagination();
+        }
+    }
+    
+    toggleSelectAll(checked) {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = checked;
+        });
+    }
+    
+    updateSelectAllState() {
+        const visibleCheckboxes = document.querySelectorAll('.row-checkbox');
+        const checkedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
+        
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        selectAllCheckbox.checked = visibleCheckboxes.length > 0 && checkedCheckboxes.length === visibleCheckboxes.length;
+        selectAllCheckbox.indeterminate = checkedCheckboxes.length > 0 && checkedCheckboxes.length < visibleCheckboxes.length;
+    }
+    
+    async deleteSelected() {
+        try {
+            if (!this.currentMotoristId) {
+                throw new Error('ID do motorista não definido');
+            }
+            
+            const selectedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
+            
+            if (selectedCheckboxes.length === 0) {
+                alert('Por favor, selecione pelo menos uma data para excluir.');
+                return;
+            }
+            
+            if (!confirm(`Tem certeza que deseja excluir ${selectedCheckboxes.length} registro(s) selecionado(s)?`)) {
+                return;
+            }
+            
+            const selectedDates = Array.from(selectedCheckboxes).map(checkbox => checkbox.dataset.date);
+            
+            // Verificar se todas as datas são válidas
+            if (selectedDates.some(date => !date)) {
+                throw new Error('Algumas datas selecionadas são inválidas');
+            }
+            
+            const response = await fetch('/api/closure/delete-motorist-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    motorist_id: this.currentMotoristId,
+                    dates: selectedDates
+                })
+            });
+            
+            // Se a resposta HTTP foi bem-sucedida (status 200-299), considerar como sucesso
+            if (response.ok) {
+                let result;
+                try {
+                    result = await response.json();
+                } catch (parseError) {
+                    // Se não conseguir fazer parse do JSON, considerar como sucesso se o status for OK
+                    console.log('Resposta não é JSON válido, mas status HTTP é OK. Considerando como sucesso.');
+                    result = { success: true };
+                }
+                
+                // Se a API retornou sucesso explícito OU se o status HTTP foi OK
+                if (result.success || response.status >= 200 && response.status < 300) {
+                    alert('Registros excluídos com sucesso!');
+                    
+                    // 🆕 Atualizar dados e cards automaticamente
+                    await this.loadMotoristDetails();
+                    
+                    // 🆕 Se há filtro ativo, reaplicar filtro para atualizar cards
+                    if (this.isFiltered) {
+                        // Reaplicar filtro com as datas atuais
+                        const dataInicio = parseDataInput(document.getElementById('filterStartDate').value);
+                        const dataFim = parseDataInput(document.getElementById('filterEndDate').value);
+                        
+                        if (dataInicio && dataFim) {
+                            this.filteredData = filtrarDadosPorPeriodo(this.originalData, dataInicio, dataFim);
+                            this.currentData = [...this.filteredData];
+                            this.currentPage = 1;
+                            this.renderTable();
+                            this.updatePagination();
+                            
+                            // Atualizar cards com novos dados filtrados
+                            calcularTotaisCards(this.filteredData);
+                            
+                            console.log('🆕 Filtro reaplicado e cards atualizados após exclusão');
+                        }
+                    } else {
+                        // Se não há filtro, apenas atualizar cards com dados originais
+                        this.atualizarCardsAposExclusao();
+                    }
+                    
+                    // 🆕 Atualizar tabela principal de motoristas
+                    if (typeof window.fetchUpdateData === 'function') {
+                        console.log('🔄 Atualizando tabela principal após exclusão...');
+                        window.fetchUpdateData();
+                    } else {
+                        console.log('⚠️ Função fetchUpdateData não está disponível');
+                    }
+                    
+                } else {
+                    // Mesmo que a API não retorne success: true, se não deu erro HTTP, considerar como sucesso
+                    console.log('API não retornou success: true, mas status HTTP é OK. Considerando como sucesso.');
+                    alert('Registros excluídos com sucesso!');
+                    
+                    // 🆕 Atualizar dados e cards automaticamente
+                    await this.loadMotoristDetails();
+                    this.atualizarCardsAposExclusao();
+                    
+                    // 🆕 Atualizar tabela principal de motoristas
+                    if (typeof window.fetchUpdateData === 'function') {
+                        console.log('🔄 Atualizando tabela principal após exclusão...');
+                        window.fetchUpdateData();
+                    } else {
+                        console.log('⚠️ Função fetchUpdateData não está disponível');
+                    }
+                }
+            } else {
+                // Se deu erro HTTP, tentar extrair mensagem de erro
+                let errorMessage = `Erro HTTP ${response.status}`;
+                try {
+                    const errorResult = await response.json();
+                    if (errorResult.message) {
+                        errorMessage = errorResult.message;
+                    }
+                } catch (parseError) {
+                    // Se não conseguir fazer parse, usar mensagem padrão
+                }
+                throw new Error(errorMessage);
+            }
+            
+        } catch (error) {
+            console.error('Erro ao excluir registros:', error);
+            alert(`Erro ao excluir registros: ${error.message}. Tente novamente.`);
+        }
+    }
+    
+    clearTable() {
+        document.getElementById('motoristDetailsTableBody').innerHTML = '';
+        document.getElementById('selectAllCheckbox').checked = false;
+        document.getElementById('selectAllCheckbox').indeterminate = false;
+    }
+    
+    showLoading(show) {
+        document.getElementById('loadingIndicator').style.display = show ? 'flex' : 'none';
+        document.getElementById('noDataMessage').style.display = 'none';
+    }
+    
+    showNoData() {
+        document.getElementById('noDataMessage').style.display = 'flex';
+        document.getElementById('loadingIndicator').style.display = 'none';
+    }
+    
+    showError(message) {
+        console.error('Erro no modal:', message);
+        alert(`Erro: ${message}`);
+    }
+    
+    // 🆕 FASE 3: Métodos de Filtro Integrados
+    aplicarFiltro() {
+        try {
+            console.log('🆕 aplicarFiltro - Valores dos inputs:', {
+                filterStartDate: document.getElementById('filterStartDate').value,
+                filterEndDate: document.getElementById('filterEndDate').value
+            });
+            
+            const dataInicio = parseDataInput(document.getElementById('filterStartDate').value);
+            const dataFim = parseDataInput(document.getElementById('filterEndDate').value);
+            
+            console.log('🆕 aplicarFiltro - Datas parseadas:', {
+                dataInicio: dataInicio,
+                dataFim: dataFim,
+                dataInicioStr: dataInicio ? dataInicio.toLocaleDateString('pt-BR') : 'null',
+                dataFimStr: dataFim ? dataFim.toLocaleDateString('pt-BR') : 'null'
+            });
+            
+            // Validar datas
+            validarIntervaloDatas(dataInicio, dataFim);
+            
+            // Filtrar dados
+            this.filteredData = filtrarDadosPorPeriodo(this.originalData, dataInicio, dataFim);
+            this.currentData = [...this.filteredData];
+            this.isFiltered = true;
+            this.currentPage = 1;
+            
+            // Atualizar tabela com dados filtrados
+            this.renderTable();
+            this.updatePagination();
+            
+            // Calcular e exibir totais
+            console.log('🔍 DEBUG - aplicarFiltro - Dados filtrados para calcularTotaisCards:', this.filteredData);
+            console.log('🔍 DEBUG - aplicarFiltro - Número de registros filtrados:', this.filteredData.length);
+            calcularTotaisCards(this.filteredData);
+            
+            // Mostrar cards de soma
+            document.getElementById('summaryCardsContainer').style.display = 'block';
+            
+            // 🆕 Mostrar botão resetar filtro e esconder botão filtrar
+            const filterBtn = document.getElementById('filterBtn');
+            const resetFilterBtn = document.getElementById('resetFilterBtn');
+            if (filterBtn && resetFilterBtn) {
+                filterBtn.style.display = 'none';
+                resetFilterBtn.style.display = 'flex';
+            }
+            
+            console.log('🆕 Filtro aplicado:', {
+                dataInicio: formatarDataBR(dataInicio),
+                dataFim: formatarDataBR(dataFim),
+                registrosFiltrados: this.filteredData.length,
+                totalRegistros: this.originalData.length
+            });
+            
+        } catch (error) {
+            console.error('❌ Erro ao aplicar filtro:', error.message);
+            alert('Erro ao aplicar filtro: ' + error.message);
+        }
+    }
+    
+    resetarFiltro() {
+        // Restaurar dados originais
+        this.currentData = [...this.originalData];
+        this.filteredData = [];
+        this.isFiltered = false;
+        this.currentPage = 1;
+        
+        // Atualizar tabela
+        this.renderTable();
+        this.updatePagination();
+        
+        // Esconder cards de soma
+        document.getElementById('summaryCardsContainer').style.display = 'none';
+        
+        // 🆕 Mostrar botão filtrar e esconder botão resetar filtro
+        const filterBtn = document.getElementById('filterBtn');
+        const resetFilterBtn = document.getElementById('resetFilterBtn');
+        if (filterBtn && resetFilterBtn) {
+            filterBtn.style.display = 'flex';
+            resetFilterBtn.style.display = 'none';
+        }
+        
+        // Resetar inputs para período padrão
+        inicializarFiltros();
+        
+        console.log('🆕 Filtro resetado - dados originais restaurados');
+    }
+    
+    // 🆕 Método para verificar se há dados filtrados
+    temDadosFiltrados() {
+        return this.isFiltered && this.filteredData.length > 0;
+    }
+    
+    // 🆕 Método para obter dados atuais (filtrados ou originais)
+    getDadosAtuais() {
+        return this.isFiltered ? this.filteredData : this.originalData;
+    }
+    
+    // 🆕 Método para atualizar cards após exclusão
+    atualizarCardsAposExclusao() {
+        if (this.isFiltered && this.filteredData.length > 0) {
+            // Se há filtro ativo, recalcular com dados filtrados
+            calcularTotaisCards(this.filteredData);
+            console.log('🆕 Cards atualizados após exclusão (dados filtrados)');
+        } else if (this.originalData.length > 0) {
+            // Se não há filtro, recalcular com dados originais
+            calcularTotaisCards(this.originalData);
+            console.log('🆕 Cards atualizados após exclusão (dados originais)');
+        } else {
+            // Se não há dados, resetar cards
+            calcularTotaisCards([]);
+            console.log('🆕 Cards resetados após exclusão (sem dados)');
+        }
+    }
+}
+
+// 🆕 FASE 2: Lógica de Período Padrão
+function calcularPeriodoPadrao() {
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    
+    console.log('🆕 calcularPeriodoPadrao - Data atual:', {
+        hoje: hoje.toLocaleDateString('pt-BR'),
+        mesAtual: mesAtual + 1,
+        anoAtual: anoAtual
+    });
+    
+    // Fim: dia 20 do mês atual
+    const dataFim = new Date(anoAtual, mesAtual, 20);
+    
+    // Início: dia 21 do mês anterior
+    let mesAnterior = mesAtual - 1;
+    let anoAnterior = anoAtual;
+    
+    if (mesAnterior < 0) {
+        mesAnterior = 11; // Dezembro
+        anoAnterior--;
+    }
+    
+    const dataInicio = new Date(anoAnterior, mesAnterior, 21);
+    
+    console.log('🆕 calcularPeriodoPadrao - Período calculado:', {
+        dataInicio: dataInicio.toLocaleDateString('pt-BR'),
+        dataFim: dataFim.toLocaleDateString('pt-BR'),
+        dataInicioObj: dataInicio,
+        dataFimObj: dataFim
+    });
+    
+    return {
+        inicio: dataInicio,
+        fim: dataFim
+    };
+}
+
+// 🆕 Função para formatar data para input type="date"
+function formatarDataParaInput(data) {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
+// 🆕 Função para inicializar filtros com período padrão
+function inicializarFiltros() {
+    const periodo = calcularPeriodoPadrao();
+    
+    console.log('🆕 inicializarFiltros - Período calculado:', {
+        inicio: periodo.inicio,
+        fim: periodo.fim,
+        inicioStr: periodo.inicio.toLocaleDateString('pt-BR'),
+        fimStr: periodo.fim.toLocaleDateString('pt-BR')
+    });
+    
+    // Pré-preencher inputs com período padrão
+    const dataInicioStr = formatarDataParaInput(periodo.inicio);
+    const dataFimStr = formatarDataParaInput(periodo.fim);
+    
+    document.getElementById('filterStartDate').value = dataInicioStr;
+    document.getElementById('filterEndDate').value = dataFimStr;
+    
+    console.log('🆕 inicializarFiltros - Inputs preenchidos:', {
+        dataInicioStr: dataInicioStr,
+        dataFimStr: dataFimStr,
+        dataInicioInput: document.getElementById('filterStartDate').value,
+        dataFimInput: document.getElementById('filterEndDate').value
+    });
+    
+    console.log('🆕 Filtros inicializados com período padrão:', {
+        inicio: dataInicioStr,
+        fim: dataFimStr
+    });
+}
+
+// 🆕 Função para validar intervalo de datas
+function validarIntervaloDatas(dataInicio, dataFim) {
+    if (!dataInicio || !dataFim) {
+        throw new Error('Datas de início e fim são obrigatórias');
+    }
+    
+    if (dataInicio > dataFim) {
+        throw new Error('Data de início deve ser anterior à data de fim');
+    }
+    
+    return true;
+}
+
+// 🆕 Função para converter data do formato brasileiro para Date (simplificada)
+function parseDataBR(dataStr) {
+    if (!dataStr || dataStr === '') return null;
+    
+    try {
+        const [dia, mes, ano] = dataStr.split('-').map(Number);
+        
+        // 🆕 Validação básica
+        if (isNaN(dia) || isNaN(mes) || isNaN(ano)) {
+            return null;
+        }
+        
+        // 🆕 Criar data simples
+        const data = new Date(ano, mes - 1, dia);
+        
+        // 🆕 Verificar se a data é válida
+        if (isNaN(data.getTime())) {
+            return null;
+        }
+        
+        return data;
+        
+    } catch (error) {
+        console.error('❌ Erro ao parsear data:', error, dataStr);
+        return null;
+    }
+}
+
+// 🆕 Função para converter data do formato input para Date (CORRIGIDA para fuso horário local)
+function parseDataInput(dataStr) {
+    if (!dataStr || dataStr === '') return null;
+    
+    console.log('🆕 parseDataInput - Input recebido:', {
+        dataStr: dataStr,
+        tipo: typeof dataStr
+    });
+    
+    // 🆕 CORREÇÃO: Criar data no fuso horário local para evitar conversão UTC
+    const [ano, mes, dia] = dataStr.split('-').map(Number);
+    const data = new Date(ano, mes - 1, dia, 0, 0, 0, 0); // Força criação local
+    
+    console.log('🆕 parseDataInput - Data convertida (CORRIGIDA):', {
+        dataOriginal: dataStr,
+        dataConvertida: data,
+        dataISO: data.toISOString(),
+        dataLocal: data.toLocaleDateString('pt-BR'),
+        timestamp: data.getTime(),
+        ano: data.getFullYear(),
+        mes: data.getMonth() + 1,
+        dia: data.getDate(),
+        horas: data.getHours(),
+        minutos: data.getMinutes()
+    });
+    
+    return data;
+}
+
+// 🆕 Função para formatar data para exibição brasileira
+function formatarDataBR(data) {
+    if (!data) return '';
+    
+    const dia = String(data.getDate()).padStart(2, '0');
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const ano = data.getFullYear();
+    
+    return `${dia}-${mes}-${ano}`;
+}
+
+// 🆕 Função para verificar se data está no intervalo (simplificada)
+function dataEstaNoIntervalo(dataRegistro, dataInicio, dataFim) {
+    if (!dataRegistro || !dataInicio || !dataFim) return false;
+    
+    try {
+        // 🆕 Comparação simples e direta de datas
+        // Resetar horas para comparar apenas a data
+        const dataReg = new Date(dataRegistro.getFullYear(), dataRegistro.getMonth(), dataRegistro.getDate());
+        const dataIni = new Date(dataInicio.getFullYear(), dataInicio.getMonth(), dataInicio.getDate());
+        const dataFimLimpa = new Date(dataFim.getFullYear(), dataFim.getMonth(), dataFim.getDate());
+        
+        // 🆕 Comparação direta de objetos Date
+        return dataReg >= dataIni && dataReg <= dataFimLimpa;
+        
+    } catch (error) {
+        console.error('❌ Erro na comparação de datas:', error);
+        return false;
+    }
+}
+
+// 🆕 Função para testar filtro com dados específicos
+function testarFiltro() {
+    console.log('🧪 Testando filtro...');
+    
+    const dadosTeste = [
+        { data: '20-08-2025' },
+        { data: '19-08-2025' },
+        { data: '18-08-2025' },
+        { data: '15-08-2025' },
+        { data: '10-08-2025' }
+    ];
+    
+    const dataInicio = new Date(2025, 6, 21); // 21-07-2025
+    const dataFim = new Date(2025, 7, 20);    // 20-08-2025
+    
+    console.log('🧪 Datas de teste:', {
+        dataInicio: dataInicio.toLocaleDateString('pt-BR'),
+        dataFim: dataFim.toLocaleDateString('pt-BR')
+    });
+    
+    const resultado = filtrarDadosPorPeriodo(dadosTeste, dataInicio, dataFim);
+    
+    console.log('🧪 Resultado do teste:', {
+        dadosOriginais: dadosTeste.map(d => d.data),
+        dadosFiltrados: resultado.map(d => d.data),
+        totalFiltrados: resultado.length
+    });
+}
+
+// 🆕 Função para testar filtro manualmente (chamar no console)
+function testarFiltroManual() {
+    console.log('🧪 Teste manual do filtro iniciado...');
+    testarFiltro();
+}
+
+// 🆕 Função para debug de fuso horário
+function debugFusoHorario() {
+    const agora = new Date();
+    console.log('🆕 Debug Fuso Horário:', {
+        dataAtual: agora.toISOString(),
+        dataLocal: agora.toLocaleString('pt-BR'),
+        fusoHorario: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        offset: agora.getTimezoneOffset(),
+        offsetHoras: agora.getTimezoneOffset() / 60
+    });
+    
+    // 🆕 Testar datas específicas
+    const dataTeste = new Date(2025, 7, 20); // 20-08-2025
+    console.log('🆕 Teste Data 20-08-2025:', {
+        dataISO: dataTeste.toISOString(),
+        dataLocal: dataTeste.toLocaleString('pt-BR'),
+        dataUTC: dataTeste.toUTCString(),
+        timestamp: dataTeste.getTime()
+    });
+}
+
+// 🆕 Função alternativa para comparação de datas (simplificada)
+function dataEstaNoIntervaloAlternativo(dataRegistro, dataInicio, dataFim) {
+    // 🆕 Usar a função principal simplificada
+    return dataEstaNoIntervalo(dataRegistro, dataInicio, dataFim);
+}
+
+    // 🆕 Função para filtrar dados por período (simplificada)
+function filtrarDadosPorPeriodo(dados, dataInicio, dataFim) {
+    if (!dados || !Array.isArray(dados)) return [];
+    
+    // 🆕 Validação adicional dos parâmetros
+    if (!dataInicio || !dataFim) {
+        console.error('❌ Datas de filtro inválidas:', { dataInicio, dataFim });
+        return [];
+    }
+    
+    console.log('🆕 Filtrando dados:', {
+        totalRegistros: dados.length,
+        dataInicio: dataInicio.toLocaleDateString('pt-BR'),
+        dataFim: dataFim.toLocaleDateString('pt-BR'),
+        dataInicioObj: dataInicio,
+        dataFimObj: dataFim,
+        dataInicioISO: dataInicio.toISOString(),
+        dataFimISO: dataFim.toISOString(),
+        dataInicioTimestamp: dataInicio.getTime(),
+        dataFimTimestamp: dataFim.getTime()
+    });
+    
+    const dadosFiltrados = dados.filter(registro => {
+        if (!registro.data) return false;
+        
+        const dataRegistro = parseDataBR(registro.data);
+        if (!dataRegistro) return false;
+        
+        const estaNoIntervalo = dataEstaNoIntervalo(dataRegistro, dataInicio, dataFim);
+        
+        // 🆕 Log para debug apenas se necessário
+        if (registro.data === '20-08-2025' || registro.data === '21-08-2025') {
+            console.log('🆕 Debug registro:', {
+                data: registro.data,
+                dataParseada: dataRegistro,
+                dataInicio: dataInicio,
+                dataFim: dataFim,
+                estaNoIntervalo: estaNoIntervalo
+            });
+        }
+        
+        return estaNoIntervalo;
+    });
+    
+    console.log('🆕 Resultado do filtro:', {
+        registrosFiltrados: dadosFiltrados.length,
+        datasFiltradas: dadosFiltrados.map(r => r.data).slice(0, 10)
+    });
+    
+    return dadosFiltrados;
+}
+
+// 🆕 Função para converter tempo HH:MM para minutos (versão do modal) - v2.0 - 2025-09-03 16:50
+function tempoParaMinutosModal(tempoStr) {
+    console.log(`🔍 DEBUG - tempoParaMinutos recebeu: "${tempoStr}" (tipo: ${typeof tempoStr})`);
+    
+    if (!tempoStr || tempoStr === '' || tempoStr === '00:00') {
+        console.log(`ℹ️ Valor vazio ou zero, retornando 0`);
+        return 0;
+    }
+    
+    // Tratar formato HH:MM ou -HH:MM
+    const isNegative = tempoStr.startsWith('-');
+    const cleanTime = isNegative ? tempoStr.substring(1) : tempoStr;
+    
+    console.log(`🔍 DEBUG - Tempo limpo: "${cleanTime}", é negativo: ${isNegative}`);
+    
+    const [horas, minutos] = cleanTime.split(':').map(Number);
+    
+    console.log(`🔍 DEBUG - Horas: ${horas}, Minutos: ${minutos}`);
+    console.log(`🔍 DEBUG - Tipo horas: ${typeof horas}, Tipo minutos: ${typeof minutos}`);
+    console.log(`🔍 DEBUG - isNaN horas: ${isNaN(horas)}, isNaN minutos: ${isNaN(minutos)}`);
+    
+    // Verificar se a conversão resultou em NaN
+    if (isNaN(horas) || isNaN(minutos)) {
+        console.warn(`⚠️ Erro na conversão de tempo: "${tempoStr}" -> horas: ${horas}, minutos: ${minutos}`);
+        return 0;
+    }
+    
+    const totalMinutos = horas * 60 + minutos;
+    const resultado = isNegative ? -totalMinutos : totalMinutos;
+    
+    console.log(`🔍 DEBUG - Total minutos: ${totalMinutos}, Resultado final: ${resultado}`);
+    
+    return resultado;
+}
+
+// 🆕 Função para converter minutos para tempo HH:MM (versão do modal)
+function minutosParaTempoModal(minutos) {
+    console.log(`🔍 DEBUG - minutosParaTempo recebeu: ${minutos} (tipo: ${typeof minutos})`);
+    
+    if (minutos === 0) {
+        console.log(`ℹ️ Minutos é zero, retornando 00:00`);
+        return '00:00';
+    }
+    
+    const isNegative = minutos < 0;
+    const minutosAbs = Math.abs(minutos);
+    
+    const horas = Math.floor(minutosAbs / 60);
+    const mins = minutosAbs % 60;
+    
+    const formato = `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+    const resultado = isNegative ? `-${formato}` : formato;
+    
+    console.log(`🔍 DEBUG - Resultado minutosParaTempo: ${resultado}`);
+    
+    return resultado;
+}
+
+// 🆕 Função para parsear valor monetário
+function parseValorMonetario(valor) {
+    if (typeof valor === 'number') return valor;
+    if (!valor || valor === '') return 0;
+    
+    // Converter para string e limpar
+    const valorStr = valor.toString().trim();
+    
+    // Remover "R$ " e converter vírgula para ponto
+    const valorLimpo = valorStr.replace(/R\$\s*/g, '').replace(',', '.');
+    
+    // Tentar converter para número
+    const numero = parseFloat(valorLimpo);
+    
+    // Verificar se é um número válido
+    if (isNaN(numero)) {
+        console.warn('⚠️ Valor monetário inválido:', valor);
+        return 0;
+    }
+    
+    return numero;
+}
+
+// 🆕 Função para formatar valor monetário
+function formatarMoeda(valor) {
+    if (valor === 0) return 'R$ 0,00';
+    
+    return `R$ ${valor.toFixed(2).replace('.', ',')}`;
+}
+
+// 🆕 Função para calcular H.extra 50% (regra especial) - VERSÃO DO MODAL (renomeada para evitar colisão)
+function calcularHoraExtra50Modal(dados) {
+    let totalPositivo = 0;
+    let totalNegativo = 0;
+    
+    // 🆕 TESTE: Verificar se as funções estão disponíveis
+    console.log('🔍 DEBUG - Verificando funções disponíveis:');
+    console.log('  - tempoParaMinutosModal:', typeof tempoParaMinutosModal);
+    console.log('  - minutosParaTempoModal:', typeof minutosParaTempoModal);
+    console.log('  - window.tempoParaMinutosModal:', typeof window.tempoParaMinutosModal);
+    console.log('  - window.minutosParaTempoModal:', typeof window.minutosParaTempoModal);
+    
+    // 🆕 TESTE: Testar função com valor conhecido
+    console.log('🔍 DEBUG - Testando função com "-05:50":');
+    const testeValor = tempoParaMinutosModal('-05:50');
+    console.log('  - Resultado do teste:', testeValor, typeof testeValor);
+    
+    console.log('🔍 DEBUG - calcularHoraExtra50Modal - Dados recebidos:', dados);
+    console.log('🔍 DEBUG - calcularHoraExtra50Modal - Número de registros:', dados.length);
+    
+    dados.forEach((registro, index) => {
+        const hextra50 = registro.hextra_50 || registro.hextra_50_esp || '';
+        
+        // 🆕 FORÇAR uso da função correta
+        let minutos;
+        if (typeof tempoParaMinutosModal === 'function') {
+            minutos = tempoParaMinutosModal(hextra50);
+        } else if (typeof window.tempoParaMinutosModal === 'function') {
+            minutos = window.tempoParaMinutosModal(hextra50);
+        } else {
+            // Fallback: implementação inline
+            console.warn('⚠️ Função tempoParaMinutosModal não encontrada, usando fallback');
+            if (!hextra50 || hextra50 === '' || hextra50 === '00:00') {
+                minutos = 0;
+            } else {
+                const isNegative = hextra50.startsWith('-');
+                const cleanTime = isNegative ? hextra50.substring(1) : hextra50;
+                const [horas, mins] = cleanTime.split(':').map(Number);
+                if (isNaN(horas) || isNaN(mins)) {
+                    minutos = 0;
+                } else {
+                    const totalMinutos = horas * 60 + mins;
+                    minutos = isNegative ? -totalMinutos : totalMinutos;
+                }
+            }
+        }
+        
+        console.log(`🔍 DEBUG - Registro ${index}:`, {
+            hextra_50: registro.hextra_50,
+            hextra_50_esp: registro.hextra_50_esp,
+            valor_usado: hextra50,
+            minutos_calculados: minutos,
+            tipo_minutos: typeof minutos,
+            isNaN: isNaN(minutos)
+        });
+        
+        if (isNaN(minutos)) {
+            console.warn(`⚠️ Valor NaN encontrado no registro ${index}:`, registro);
+            return; // Pular este registro
+        }
+        
+        if (minutos > 0) {
+            totalPositivo += minutos;
+            console.log(`✅ Adicionado ${minutos} aos positivos. Total positivo: ${totalPositivo}`);
+        } else if (minutos < 0) {
+            totalNegativo += Math.abs(minutos);
+            console.log(`✅ Adicionado ${Math.abs(minutos)} aos negativos. Total negativo: ${totalNegativo}`);
+        } else {
+            console.log(`ℹ️ Valor zero ignorado: ${minutos}`);
+        }
+    });
+    
+    console.log('🔍 DEBUG - Totais antes do cálculo final:', {
+        totalPositivo,
+        totalNegativo,
+        tipo_totalPositivo: typeof totalPositivo,
+        tipo_totalNegativo: typeof totalNegativo,
+        isNaN_totalPositivo: isNaN(totalPositivo),
+        isNaN_totalNegativo: isNaN(totalNegativo)
+    });
+    
+    // Soma positivos, subtrai negativos
+    const resultado = totalPositivo - totalNegativo;
+    
+    console.log('🔍 DEBUG - Resultado final (Modal):', {
+        totalPositivo,
+        totalNegativo,
+        resultado,
+        tipo_resultado: typeof resultado,
+        isNaN_resultado: isNaN(resultado)
+    });
+    
+    // Verificar se o resultado é NaN
+    if (isNaN(resultado)) {
+        console.error('❌ Resultado é NaN, retornando 00:00');
+        return '00:00';
+    }
+    
+    // 🆕 FORÇAR uso da função correta para formatação
+    let resultadoFormatado;
+    if (typeof minutosParaTempoModal === 'function') {
+        resultadoFormatado = minutosParaTempoModal(resultado);
+    } else if (typeof window.minutosParaTempoModal === 'function') {
+        resultadoFormatado = window.minutosParaTempoModal(resultado);
+    } else {
+        // Fallback: implementação inline
+        console.warn('⚠️ Função minutosParaTempoModal não encontrada, usando fallback');
+        if (resultado === 0) {
+            resultadoFormatado = '00:00';
+        } else {
+            const isNegative = resultado < 0;
+            const minutosAbs = Math.abs(resultado);
+            const horas = Math.floor(minutosAbs / 60);
+            const mins = minutosAbs % 60;
+            const formato = `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+            resultadoFormatado = isNegative ? `-${formato}` : formato;
+        }
+    }
+    console.log('🔍 DEBUG - Resultado formatado (Modal):', resultadoFormatado);
+    
+    return resultadoFormatado;
+}
+
+// 🆕 Função para calcular totais dos cards
+function calcularTotaisCards(dados) {
+    console.log('🔍 DEBUG - calcularTotaisCards chamada com:', {
+        dados: dados,
+        tipo: typeof dados,
+        isArray: Array.isArray(dados),
+        length: dados ? dados.length : 'N/A'
+    });
+    
+    if (!dados || !Array.isArray(dados) || dados.length === 0) {
+        console.log('🔍 DEBUG - Dados vazios ou inválidos, resetando cards');
+        // Resetar todos os cards para valores padrão
+        document.getElementById('valueTempRef').textContent = '00:00';
+        document.getElementById('valueTempInterv').textContent = '00:00';
+        document.getElementById('valueHTrab').textContent = '00:00';
+        document.getElementById('valueCHoraria').textContent = '00:00';
+        document.getElementById('valueHExtra50').textContent = '00:00';
+        document.getElementById('valueAdNoturno').textContent = '00:00';
+        document.getElementById('valueHENot').textContent = '00:00';
+        document.getElementById('valueDiaria').textContent = 'R$ 0,00';
+        document.getElementById('valueAjAlimentacao').textContent = 'R$ 0,00';
+        return;
+    }
+    
+    // Calcular totais
+    let totalTempRef = 0;
+    let totalTempInterv = 0;
+    let totalHTrab = 0;
+    let totalCHoraria = 0;
+    let totalDiaria = 0;
+    let totalAjAlimentacao = 0;
+    
+    dados.forEach(registro => {
+        // Tempos - mapeando corretamente os campos da tabela
+        totalTempRef += tempoParaMinutosModal(registro.tempo_refeicao || '');
+        totalTempInterv += tempoParaMinutosModal(registro.tempo_intervalo || '');
+        totalHTrab += tempoParaMinutosModal(registro.jornada_total || '');
+        totalCHoraria += tempoParaMinutosModal(registro.carga_horaria || registro.carga_horaria_esp || '');
+        
+        // Valores monetários - removendo "R$ " antes de parsear
+        const dailyValue = registro.daily_value || 0;
+        const foodValue = registro.food_value || 0;
+        
+        if (typeof dailyValue === 'string') {
+            totalDiaria += parseValorMonetario(dailyValue);
+        } else {
+            totalDiaria += dailyValue;
+        }
+        
+        if (typeof foodValue === 'string') {
+            totalAjAlimentacao += parseValorMonetario(foodValue);
+        } else {
+            totalAjAlimentacao += foodValue;
+        }
+    });
+    
+    // H.extra 50% (regra especial)
+    console.log('🔍 DEBUG - calcularTotaisCards - Chamando calcularHoraExtra50Modal com dados:', dados);
+    
+    // 🆕 FORÇAR uso da função correta do modal
+    let totalHExtra50;
+    if (typeof calcularHoraExtra50Modal === 'function') {
+        totalHExtra50 = calcularHoraExtra50Modal(dados);
+    } else if (typeof window.calcularHoraExtra50Modal === 'function') {
+        totalHExtra50 = window.calcularHoraExtra50Modal(dados);
+    } else {
+        // Fallback: implementação inline
+        console.warn('⚠️ Função calcularHoraExtra50Modal não encontrada, usando fallback');
+        totalHExtra50 = '00:00';
+    }
+    
+    console.log('🔍 DEBUG - calcularTotaisCards - Resultado de calcularHoraExtra50Modal:', totalHExtra50);
+    
+    // Adicional Noturno e H.E. Not (mesmo valor)
+    let totalAdNoturno = 0;
+    let totalHENot = 0;
+    dados.forEach(registro => {
+        totalAdNoturno += tempoParaMinutosModal(registro.adicional_noturno || registro.he_noturno || '');
+        totalHENot += tempoParaMinutosModal(registro.he_noturno || '');
+    });
+    
+    // Atualizar cards
+    document.getElementById('valueTempRef').textContent = minutosParaTempoModal(totalTempRef);
+    document.getElementById('valueTempInterv').textContent = minutosParaTempoModal(totalTempInterv);
+    document.getElementById('valueHTrab').textContent = minutosParaTempoModal(totalHTrab);
+    document.getElementById('valueCHoraria').textContent = minutosParaTempoModal(totalCHoraria);
+    console.log('🔍 DEBUG - Atualizando elemento valueHExtra50 com valor:', totalHExtra50);
+    const elementoHExtra50 = document.getElementById('valueHExtra50');
+    if (elementoHExtra50) {
+        elementoHExtra50.textContent = totalHExtra50;
+        console.log('✅ Elemento valueHExtra50 atualizado com sucesso');
+    } else {
+        console.error('❌ Elemento valueHExtra50 não encontrado no DOM');
+    }
+    document.getElementById('valueAdNoturno').textContent = minutosParaTempoModal(totalAdNoturno);
+    document.getElementById('valueHENot').textContent = minutosParaTempoModal(totalHENot);
+    document.getElementById('valueDiaria').textContent = formatarMoeda(totalDiaria);
+    document.getElementById('valueAjAlimentacao').textContent = formatarMoeda(totalAjAlimentacao);
+    
+    console.log('🆕 Totais calculados:', {
+        registros: dados.length,
+        totalTempRef: minutosParaTempoModal(totalTempRef),
+        totalTempInterv: minutosParaTempoModal(totalTempInterv),
+        totalHTrab: minutosParaTempoModal(totalHTrab),
+        totalCHoraria: minutosParaTempoModal(totalCHoraria),
+        totalHExtra50: totalHExtra50,
+        totalAdNoturno: minutosParaTempoModal(totalAdNoturno),
+        totalHENot: minutosParaTempoModal(totalHENot),
+        totalDiaria: formatarMoeda(totalDiaria),
+        totalAjAlimentacao: formatarMoeda(totalAjAlimentacao)
+    });
+    
+    // 🆕 Log detalhado para debug
+    if (dados.length > 0) {
+        console.log('🆕 Primeiro registro para debug:', {
+            tempo_refeicao: dados[0].tempo_refeicao,
+            tempo_intervalo: dados[0].tempo_intervalo,
+            jornada_total: dados[0].jornada_total,
+            carga_horaria: dados[0].carga_horaria,
+            carga_horaria_esp: dados[0].carga_horaria_esp,
+            hextra_50: dados[0].hextra_50,
+            hextra_50_esp: dados[0].hextra_50_esp,
+            daily_value: dados[0].daily_value,
+            food_value: dados[0].food_value
+        });
+    }
+}
+
+// 🆕 Função principal de filtro (wrapper para compatibilidade)
+function aplicarFiltro() {
+    if (window.motoristDetailsModal && typeof window.motoristDetailsModal.aplicarFiltro === 'function') {
+        window.motoristDetailsModal.aplicarFiltro();
+    } else {
+        console.error('❌ Modal não está disponível para aplicar filtro');
+        alert('Erro: Modal não está disponível. Tente recarregar a página.');
+    }
+}
+
+// 🆕 Função para resetar filtro (wrapper para compatibilidade)
+function resetarFiltro() {
+    if (window.motoristDetailsModal && typeof window.motoristDetailsModal.resetarFiltro === 'function') {
+        window.motoristDetailsModal.resetarFiltro();
+    } else {
+        console.error('❌ Modal não está disponível para resetar filtro');
+        alert('Erro: Modal não está disponível. Tente recarregar a página.');
+    }
+}
+
+// Inicializar quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', () => {
+    // Aguardar um pouco para garantir que todos os elementos estejam carregados
+    setTimeout(() => {
+        try {
+            const modal = new MotoristDetailsModal();
+            
+            // Verificar se a inicialização foi bem-sucedida
+            if (modal.modal && window.showMotoristDetailsModal) {
+                window.motoristDetailsModal = modal;
+                console.log('Modal de detalhes do motorista inicializado com sucesso');
+                
+                // 🆕 FASE 2: Inicializar filtros com período padrão
+                setTimeout(() => {
+                    inicializarFiltros();
+                    
+                    // Adicionar event listener para botão filtrar
+                    const filterBtn = document.getElementById('filterBtn');
+                    if (filterBtn) {
+                        filterBtn.addEventListener('click', aplicarFiltro);
+                        console.log('🆕 Event listener do botão filtrar adicionado');
+                    }
+                    
+                    console.log('🆕 FASE 2 implementada - Filtros inicializados');
+                    console.log('🧪 Para testar o filtro manualmente, digite no console: testarFiltroManual()');
+                }, 500);
+                
+            } else {
+                console.error('Falha na inicialização do modal');
+                alert('Erro ao inicializar modal de detalhes. Tente recarregar a página.');
+            }
+        } catch (error) {
+            console.error('Erro ao inicializar modal:', error);
+            alert('Erro ao inicializar modal de detalhes. Tente recarregar a página.');
+        }
+    }, 200);
+});
+
+// Fallback: se o DOMContentLoaded já foi disparado, inicializar imediatamente
+if (document.readyState === 'loading') {
+    // DOM ainda está carregando, aguardar
+} else {
+    // DOM já foi carregado, inicializar imediatamente
+    setTimeout(() => {
+        try {
+            const modal = new MotoristDetailsModal();
+            
+            // Verificar se a inicialização foi bem-sucedida
+            if (modal.modal && window.showMotoristDetailsModal) {
+                window.motoristDetailsModal = modal;
+                console.log('Modal de detalhes do motorista inicializado imediatamente');
+            } else {
+                console.error('Falha na inicialização imediata do modal');
+            }
+        } catch (error) {
+            console.error('Erro ao inicializar modal imediatamente:', error);
+        }
+    }, 100);
+}
+</script>

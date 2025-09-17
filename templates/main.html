@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RPZ</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
+    <script src="https://cdn.datatables.net/scroller/2.4.3/js/dataTables.scroller.js"></script>
+    <script src="https://cdn.datatables.net/scroller/2.4.3/js/scroller.dataTables.js"></script>
+    <script src="{{ url_for('static', filename='js/progress.js') }}"></script>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/scroller/2.4.3/css/scroller.dataTables.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/main.css') }}"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+              body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+          overflow-x: hidden;
+          position: relative;
+        }
+
+        /* Prevenir duplicação de elementos */
+        .topbar,
+        .sidebar,
+        .main-container {
+          transform: translateZ(0);
+          backface-visibility: hidden;
+          perspective: 1000px;
+        }
+        
+        /* Garantir que não há sobreposição */
+        body {
+          overflow-x: hidden;
+          position: relative;
+        }
+        
+        /* Garantir que o iframe não cause sobreposição */
+        iframe {
+          position: relative;
+          z-index: 1;
+          border: none;
+          width: 100%;
+          height: 100%;
+        }
+        
+        /* Garantir que as barras apareçam */
+        .topbar {
+          z-index: 1001 !important;
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+        
+        .sidebar {
+          z-index: 1002 !important;
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+
+      /* Topbar Moderna */
+              .topbar {
+          background: linear-gradient(135deg, #050a6b 0%, #0812a1 50%, #0a1ac8 100%);
+          color: #FFFFFF;
+          padding: 0 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          height: 66px;
+          width: 100%;
+          position: fixed;
+          top: 0;
+          left: 0;
+          z-index: 1000;
+          box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1), 0 2px 10px rgba(0, 0, 0, 0.1);
+          backdrop-filter: blur(15px);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          transform: translateZ(0);
+          will-change: transform;
+        }
+
+      .topbar .left {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .topbar .left img {
+        height: 45px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+      }
+
+      .topbar .page-location {
+        font-size: 14px;
+        font-weight: 500;
+        opacity: 0.9;
+      }
+
+      .topbar .right {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .topbar .right a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .topbar .right a:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+      }
+
+      .topbar .username {
+        font-weight: 600;
+        color: #fff;
+      }
+
+
+
+      /* Layout Principal */
+              .main-container {
+          display: flex;
+          height: calc(100vh - 66px);
+          margin-top: 66px;
+          transition: all 0.3s ease;
+          position: relative;
+          z-index: 1;
+          overflow: hidden;
+        }
+
+      /* Sidebar Moderna e Recolhível */
+      .sidebar {
+        width: 180px;
+        background: linear-gradient(180deg, #050a6b 0%, #0812a1 50%, #0a1ac8 100%);
+        color: #FFFFFF;
+        padding: 20px 0;
+        overflow-y: auto;
+        flex-shrink: 0;
+        transition: all 0.3s ease;
+        box-shadow: 4px 0 25px rgba(0, 0, 0, 0.1), 2px 0 10px rgba(0, 0, 0, 0.1);
+        position: relative;
+        backdrop-filter: blur(15px);
+        z-index: 1002;
+        display: block;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .sidebar.collapsed {
+        width: 48px;
+      }
+
+      .sidebar-toggle {
+        position: absolute;
+        top: 20px;
+        right: -15px;
+        background: linear-gradient(135deg, #050a6b 0%, #0812a1 100%);
+        color: #FFFFFF;
+        border: none;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        z-index: 100;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .sidebar-toggle:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .sidebar-toggle i {
+        transition: transform 0.3s ease;
+      }
+
+      .sidebar.collapsed .sidebar-toggle i {
+        transform: rotate(180deg);
+      }
+
+      .sidebar-header {
+        text-align: center;
+        padding: 0 20px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 10px;
+      }
+
+      .sidebar.collapsed .sidebar-header {
+        padding: 0 10px 20px;
+      }
+
+      .sidebar-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .sidebar:not(.collapsed) .sidebar-header h3 {
+        opacity: 1;
+      }
+
+      .nav {
+        list-style: none;
+        padding: 12px 0 20px 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        height: 100%;
+      }
+
+      .nav-item {
+        margin-bottom: 18px;
+      }
+
+      .nav-link {
+        display: flex;
+        align-items: center;
+        padding: 9px 10px;
+        color: rgba(255, 255, 255, 0.85);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 13px;
+        transition: all 0.3s ease;
+        border-radius: 0 12px 12px 0;
+        margin-right: 6px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .nav-link::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(135deg, #5DADE2 0%, #0812a1 100%);
+        transition: width 0.3s ease;
+        z-index: -1;
+      }
+
+      .nav-link:hover::before {
+        width: 100%;
+      }
+
+      .nav-link:hover {
+        color: white;
+        transform: translateX(5px);
+      }
+
+      .nav-link i {
+        margin-right: 8px;
+        width: 18px;
+        text-align: center;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+      }
+
+      .nav-link span {
+        transition: opacity 0.3s ease;
+      }
+
+      /* Sidebar recolhida: esconder apenas o texto, nunca o ícone principal */
+      .sidebar.collapsed .nav-link > span {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+        display: inline-block;
+      }
+      .sidebar.collapsed .nav-link > i:not(.arrow) {
+        opacity: 1 !important;
+        width: auto !important;
+        display: flex !important;
+      }
+      .sidebar.collapsed .nav-link > i.arrow {
+        display: none !important;
+      }
+
+      .sidebar.collapsed .nav-link {
+        padding: 9px 2px;
+        justify-content: center;
+      }
+
+      .sidebar.collapsed .nav-link i {
+        margin-right: 0;
+        font-size: 18px;
+      }
+
+      /* Submenu Expandível */
+      .expandable-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 10px;
+        color: rgba(255, 255, 255, 0.85);
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 13px;
+        transition: all 0.3s ease;
+        border-radius: 0 12px 12px 0;
+        margin-right: 6px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .expandable-toggle::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(135deg, #5DADE2 0%, #0812a1 100%);
+        transition: width 0.3s ease;
+        z-index: -1;
+      }
+
+      .expandable-toggle:hover::before {
+        width: 100%;
+      }
+
+      .expandable-toggle:hover {
+        color: white;
+        transform: translateX(5px);
+      }
+
+      .expandable-toggle i:first-child {
+        margin-right: 8px;
+        width: 18px;
+        text-align: center;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .expandable-toggle .arrow {
+        transition: transform 0.3s ease;
+      }
+
+      .expandable-toggle.open .arrow {
+        transform: rotate(180deg);
+      }
+
+      .sidebar.collapsed .expandable-toggle {
+        padding: 15px 10px;
+        justify-content: center;
+      }
+
+      .sidebar.collapsed .expandable-toggle span {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+      }
+
+      .sidebar.collapsed .expandable-toggle i:first-child {
+        margin-right: 0;
+        font-size: 18px;
+      }
+
+      .sidebar.collapsed .expandable-toggle .arrow {
+        display: none;
+      }
+
+      .expandable {
+        display: none;
+        flex-direction: column;
+        margin-left: 18px;
+        margin-top: 2px;
+        border-radius: 10px;
+        background: rgba(44, 62, 80, 0.97);
+        transition: box-shadow 0.3s;
+      }
+      .expandable.open {
+        display: flex;
+        /* Sombra gradiente moderna */
+        box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.1), 0 0 0 4px rgba(8, 18, 161, 0.15);
+        border: 1.5px solid rgba(8, 18, 161, 0.3);
+        background: linear-gradient(120deg, rgba(8, 18, 161, 0.15) 0%, rgba(93, 173, 226, 0.15) 100%), rgba(44, 62, 80, 0.97);
+      }
+
+      /* Esconde o submenu quando sidebar está recolhida */
+      .sidebar.collapsed .expandable {
+        display: none !important;
+      }
+
+
+
+      .expandable li a {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border-radius: 0 20px 20px 0;
+        margin-right: 15px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .expandable li a::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(135deg, #5DADE2 0%, #0812a1 100%);
+        transition: width 0.3s ease;
+        z-index: -1;
+      }
+
+      .expandable li a:hover::before {
+        width: 100%;
+      }
+
+      .expandable li a:hover {
+        color: white;
+        transform: translateX(5px);
+      }
+
+      .expandable li a i {
+        margin-right: 12px;
+        width: 16px;
+        text-align: center;
+        font-size: 14px;
+      }
+
+      .sidebar.collapsed .expandable {
+        display: none !important;
+      }
+
+      /* Conteúdo */
+      .content {
+        flex: 1;
+        background: #F4F6F7;
+        padding: 20px;
+        overflow-y: auto;
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 1;
+        overflow: hidden;
+      }
+
+      #content-frame {
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        background: #FFFFFF;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Responsividade */
+      @media (max-width: 768px) {
+        .sidebar {
+          position: fixed;
+          left: -280px;
+          height: 100vh;
+          z-index: 999;
+        }
+
+        .sidebar.open {
+          left: 0;
+        }
+
+        .sidebar-toggle {
+          position: fixed;
+          left: 20px;
+          top: 80px;
+          z-index: 1000;
+        }
+
+        .content {
+          margin-left: 0;
+        }
+      }
+
+      /* Tooltip para sidebar recolhida */
+      .sidebar.collapsed .nav-link,
+      .sidebar.collapsed .expandable-toggle {
+        position: relative;
+      }
+
+      .sidebar.collapsed .nav-link:hover::after,
+      .sidebar.collapsed .expandable-toggle:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        white-space: nowrap;
+        margin-left: 10px;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* Ajuste específico para o ícone de caminhão na sidebar */
+      .sidebar .fa-truck {
+        font-size: 20px !important;
+        min-width: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Bloco visual para o módulo Início igual ao grupo Jornadas */
+      .nav-block, .nav-group-link {
+        background: linear-gradient(120deg, rgba(8, 18, 161, 0.15) 0%, rgba(93, 173, 226, 0.15) 100%), rgba(44, 62, 80, 0.97);
+        border: 1.5px solid rgba(8, 18, 161, 0.3);
+        box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.1), 0 0 0 4px rgba(8, 18, 161, 0.1);
+        border-radius: 10px;
+        min-height: 40px;
+        height: 40px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        font-weight: 500;
+        font-size: 13px;
+        color: rgba(255,255,255,0.92);
+        margin-bottom: 0;
+        margin-top: 0;
+        padding: 8px 12px;
+        transition: box-shadow 0.3s, background 0.3s;
+        gap: 8px;
+      }
+      .nav-block-link:hover, .nav-group-link:hover {
+        background: linear-gradient(120deg, rgba(8, 18, 161, 0.25) 0%, rgba(93, 173, 226, 0.25) 100%), rgba(44, 62, 80, 1);
+        box-shadow: 0 6px 28px 0 rgba(0, 0, 0, 0.1), 0 0 0 6px rgba(8, 18, 161, 0.2);
+        color: #fff;
+      }
+      .nav-block-link i, .nav-group-link i {
+        font-size: 16px;
+        margin-right: 6px;
+        min-width: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .nav-block-link span, .nav-group-link span {
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1;
+        display: inline-block;
+        vertical-align: middle;
+        opacity: 1 !important;
+        width: auto !important;
+      }
+      /* Aproximação vertical dos módulos */
+      .nav-block + .nav-item {
+        margin-top: 0px !important;
+      }
+    </style>
+  </head>
+
+  <!-- Incluindo o componente de barra de progresso -->
+  {% include 'partials/progress_bar.html' %}
+
+  <body>
+    <header class="topbar">
+      <div class="left">
+        <img
+          src="{{ url_for('static', filename='img/logo_sistema.png') }}"
+          alt="Logo RPZ"
+        />
+        <span id="location-info" class="page-location"
+          >Você está em: {{ location }}</span
+        >
+      </div>
+      <div class="right">
+        {% if session['user']['is_admin'] %}
+        <a href="/config" data-page="Configurações" class="config-btn">
+          <i class="fas fa-cogs"></i>
+          <span>Configurações</span>
+        </a>
+        {% endif %}
+        <span class="username">{{ username }}</span>
+        {% if session['user'] %}
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Sair</a>
+        {% endif %}
+      </div>
+    </header>
+
+    <div class="main-container">
+      <div class="sidebar" id="sidebar">
+        <button class="sidebar-toggle" id="sidebarToggle">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        
+        <div class="sidebar-header">
+          <h3>Menu Principal</h3>
+        </div>
+
+        <ul class="nav">
+          <li class="nav-item">
+            <a href="/home" data-page="Início" style="display: block; width: 100%; text-decoration: none; color: inherit;">
+              <div class="nav-link nav-group-link" data-tooltip="Início">
+                <i class="fas fa-home"></i>
+                <span class="nav-block-text">Início</span>
+              </div>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <div class="nav-link nav-group-link expandable-toggle" data-tooltip="Jornadas">
+                <i class="fas fa-truck"></i>
+                <span class="nav-block-text">Jornadas</span>
+                <i class="fas fa-chevron-down arrow"></i>
+            </div>
+            <ul class="expandable">
+              <li>
+                <a href="/track" data-page="Analisar Jornada">
+                  <i class="fas fa-search"></i>
+                  <span>Analisar</span>
+                </a>
+              </li>
+              <li>
+                <a href="/upload" data-page="Upload">
+                  <i class="fas fa-upload"></i>
+                  <span>Carregar Arquivos</span>
+                </a>
+              </li>
+              <li>
+                <a href="/download-report" data-page="Download de Jornada">
+                  <i class="fas fa-download"></i>
+                  <span>Download</span>
+                </a>
+              </li>
+              <li>
+                <a href="/infractions" data-page="Infrações">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  <span>Infrações</span>
+                </a>
+              </li>
+              <li>
+                <a href="/insert_data" data-page="Inserir dados">
+                  <i class="fas fa-plus-circle"></i>
+                  <span>Inserir dados</span>
+                </a>
+              </li>
+              <li>
+                <a href="{{ url_for('jornada.check_updates_page') }}" data-page="Conferir Atualização">
+                  <i class="fas fa-sync-alt"></i>
+                  <span>Conferir Atualização</span>
+                </a>
+              </li>
+            </ul>
+          </li>
+
+          <li class="nav-item">
+            <div class="nav-link nav-group-link expandable-toggle" data-tooltip="Fechamento de Ponto">
+                <i class="fas fa-calendar-check"></i>
+                <span class="nav-block-text">Fechamento de Ponto</span>
+                <i class="fas fa-chevron-down arrow"></i>
+            </div>
+            <ul class="expandable">
+              <li>
+                <a href="/upload_closure" data-page="Upload Fechamento">
+                  <i class="fas fa-upload"></i>
+                  <span>Carregar Arquivos</span>
+                </a>
+              </li>
+              <li>
+                <a href="/closure_parameters" data-page="Parâmetros Fechamento">
+                  <i class="fas fa-cog"></i>
+                  <span>Parâmetros</span>
+                </a>
+              </li>
+              <li>
+                <a href="/reports" data-page="Relatórios Fechamento">
+                  <i class="fas fa-chart-line"></i>
+                  <span>Painel de Controle</span>
+                </a>
+              </li>
+            </ul>
+          </li>
+
+          <li class="nav-item">
+            <div class="nav-link nav-group-link expandable-toggle" data-tooltip="SSMA">
+                <i class="fas fa-shield-alt"></i>
+                <span class="nav-block-text">SSMA</span>
+                <i class="fas fa-chevron-down arrow"></i>
+            </div>
+            <ul class="expandable">
+              <li>
+                <a href="/checklist_control" data-page="Controle de Check Lists">
+                  <i class="fas fa-clipboard-check"></i>
+                  <span>Controle de Check Lists</span>
+                </a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="content">
+        <iframe id="content-frame" src="/home"></iframe>
+      </div>
+    </div>
+
+    <script>
+      // Toggle da Sidebar
+      document.getElementById('sidebarToggle').addEventListener('click', function() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed');
+        
+        // Salva o estado no localStorage
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+      });
+
+      // Restaura o estado da sidebar ao carregar a página
+      document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        
+        if (isCollapsed) {
+          sidebar.classList.add('collapsed');
+        }
+      });
+
+      // Função para alternar a visibilidade do menu expansível (Sidebar)
+      document.querySelectorAll(".sidebar .expandable-toggle").forEach((toggle) => {
+        toggle.addEventListener("click", function () {
+          const expandable = this.parentElement.querySelector(".expandable");
+          expandable.classList.toggle("open");
+          this.classList.toggle("open");
+        });
+      });
+
+      // Lógica de navegação do menu
+      document.querySelectorAll(".sidebar a, .topbar .right a").forEach((link) => {
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          const url = this.getAttribute("href");
+          
+          // Se for logout, redirecionar diretamente
+          if (url === "/logout") {
+            window.location.href = url;
+            return;
+          }
+          
+          const nomePagina = this.getAttribute("data-page");
+          
+          // Verificar se os elementos existem
+          const locationInfo = document.getElementById("location-info");
+          const contentFrame = document.getElementById("content-frame");
+          
+          if (locationInfo) {
+            locationInfo.textContent = "Você está em: " + nomePagina;
+          }
+          
+          if (contentFrame) {
+            contentFrame.src = url;
+          }
+        });
+      });
+
+      // Responsividade para mobile
+      function checkMobile() {
+        const sidebar = document.getElementById('sidebar');
+        const toggle = document.getElementById('sidebarToggle');
+        
+        if (window.innerWidth <= 768) {
+          sidebar.classList.add('collapsed');
+          toggle.style.display = 'flex';
+        } else {
+          toggle.style.display = 'flex';
+        }
+      }
+
+      window.addEventListener('resize', checkMobile);
+      checkMobile();
+
+      // Prevenir duplicação de elementos
+      function preventDuplication() {
+        // Garantir que há apenas uma topbar e sidebar
+        const topbars = document.querySelectorAll('.topbar');
+        const sidebars = document.querySelectorAll('.sidebar');
+        const mainContainers = document.querySelectorAll('.main-container');
+        
+        if (topbars.length > 1) {
+          // Manter apenas a primeira topbar
+          for (let i = 1; i < topbars.length; i++) {
+            topbars[i].remove();
+          }
+        }
+        
+        if (sidebars.length > 1) {
+          // Manter apenas a primeira sidebar
+          for (let i = 1; i < sidebars.length; i++) {
+            sidebars[i].remove();
+          }
+        }
+        
+        if (mainContainers.length > 1) {
+          // Manter apenas o primeiro main-container
+          for (let i = 1; i < mainContainers.length; i++) {
+            mainContainers[i].remove();
+          }
+        }
+        
+        // Garantir que as barras estejam visíveis
+        const topbar = document.querySelector('.topbar');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (topbar) {
+          topbar.style.display = 'flex';
+          topbar.style.zIndex = '1001';
+          topbar.style.visibility = 'visible';
+          topbar.style.opacity = '1';
+        }
+        
+        if (sidebar) {
+          sidebar.style.display = 'block';
+          sidebar.style.zIndex = '1002';
+          sidebar.style.visibility = 'visible';
+          sidebar.style.opacity = '1';
+        }
+        
+        // Garantir que o iframe está carregando a página correta apenas se estiver vazio
+        const iframe = document.getElementById('content-frame');
+        if (iframe && (!iframe.src || iframe.src === window.location.origin + '/')) {
+          iframe.src = '/home';
+        }
+        
+        // Limpar qualquer elemento duplicado que possa ter sido criado
+        // setTimeout(() => {
+        //   preventDuplication();
+        // }, 100);
+      }
+
+      // Executar quando a página carregar
+      document.addEventListener('DOMContentLoaded', function() {
+        preventDuplication();
+        
+        const sidebar = document.getElementById('sidebar');
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        
+        if (isCollapsed) {
+          sidebar.classList.add('collapsed');
+        }
+        
+        // Garantir que o iframe carregue corretamente
+        const iframe = document.getElementById('content-frame');
+        if (iframe) {
+          // Definir a página inicial se não estiver definida
+          if (!iframe.src || iframe.src === window.location.origin + '/') {
+            iframe.src = '/home';
+          }
+          
+          iframe.onload = function() {
+            preventDuplication();
+          };
+          
+          iframe.onerror = function() {
+            console.log("Erro ao carregar iframe:", iframe.src);
+          };
+        }
+      });
+    </script>
+  </body>
+</html>

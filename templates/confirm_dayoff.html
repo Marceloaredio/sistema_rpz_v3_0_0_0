@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Confirmação de Substituição</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      background-color: #fff;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      color: #c0392b;
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    ul {
+      background-color: #fef2f2;
+      border: 1px solid #e0b4b4;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    ul li {
+      margin-bottom: 10px;
+      color: #555;
+      font-size: 15px;
+    }
+
+    .buttons {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    .btn {
+      padding: 10px 22px;
+      font-size: 15px;
+      margin: 0 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .btn-danger {
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    .btn-secondary {
+      background-color: #7f8c8d;
+      color: white;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>⚠ Conflitos detectados</h2>
+
+    <p style="text-align: center;">
+      Já existem registros para este motorista nas seguintes datas:
+    </p>
+
+    <ul>
+      {% for item in conflitos %}
+        <li>
+          Já existe registro definido para o Motorista <strong>{{ motorista }}</strong>
+          com {{ item.info }} na data <strong>{{ item.data }}</strong>.
+        </li>
+      {% endfor %}
+    </ul>
+
+    <p style="text-align: center; font-weight: bold;">
+      Deseja realmente substituir a(s) análise(s)?
+    </p>
+
+    <form method="POST" class="buttons" autocomplete="off">
+      <button name="confirmar" class="btn btn-danger">Sim, substituir</button>
+      <button name="cancelar" class="btn btn-secondary">Não, cancelar</button>
+    </form>
+  </div>
+</body>
+</html>
